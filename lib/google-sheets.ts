@@ -35,9 +35,57 @@ async function getGoogleAuth() {
   }
 }
 
+// Function to ensure the Orders sheet exists
+async function ensureSheetExists(sheets: any, spreadsheetId: string): Promise<void> {
+  try {
+    // Get all sheets in the spreadsheet
+    const response = await sheets.spreadsheets.get({
+      spreadsheetId: spreadsheetId
+    });
+    
+    const sheetExists = response.data.sheets.some(
+      (sheet: any) => sheet.properties.title === 'Orders'
+    );
+    
+    // If Orders sheet doesn't exist, create it
+    if (!sheetExists) {
+      console.log("Creating 'Orders' sheet...");
+      await sheets.spreadsheets.batchUpdate({
+        spreadsheetId: spreadsheetId,
+        requestBody: {
+          requests: [
+            {
+              addSheet: {
+                properties: {
+                  title: 'Orders',
+                }
+              }
+            }
+          ]
+        }
+      });
+      
+      // Add headers to the new sheet
+      await sheets.spreadsheets.values.update({
+        spreadsheetId: spreadsheetId,
+        range: 'Orders!A1:M1',
+        valueInputOption: 'USER_ENTERED',
+        requestBody: {
+          values: [['Order ID', 'Customer Name', 'Email', 'Address', 'City', 'State', 'Zip Code', 'Country', 'Phone', 'Status', 'Total', 'Items', 'Created At']]
+        }
+      });
+      
+      console.log("'Orders' sheet created successfully with headers");
+    }
+  } catch (error) {
+    console.error("Error ensuring sheet exists:", error);
+    throw error;
+  }
+}
+
 export async function addOrderToGoogleSheet(order: OrderWithItems): Promise<void> {
   if (!SPREADSHEET_ID) {
-    console.log("Google Sheets ID not configured, skipping sheet update");
+    console.warn("Google Sheets ID not configured, skipping sheet update");
     return;
   }
 
@@ -45,6 +93,10 @@ export async function addOrderToGoogleSheet(order: OrderWithItems): Promise<void
     const auth = await getGoogleAuth();
     const sheets = google.sheets({ version: 'v4', auth });
     
+    // Make sure the Orders sheet exists before proceeding
+    await ensureSheetExists(sheets, SPREADSHEET_ID);
+    
+    console.log(order);
     // Format order items
     const items = order.items.map(item => 
       `${item.product.name} (${item.quantity}x) - $${item.price.toFixed(2)}`
@@ -70,26 +122,22 @@ export async function addOrderToGoogleSheet(order: OrderWithItems): Promise<void
 
     const response = await sheets.spreadsheets.values.append({
       spreadsheetId: SPREADSHEET_ID,
-      range: 'Orders!A:M',
-      valueInputOption: 'RAW',
+      range: 'Orders!A2',  // Start appending after the header row
+      valueInputOption: 'USER_ENTERED',
       requestBody: {
-        values,
-      },
+        values: values,
+      }
     });
 
-    // Store the row ID for future updates
     if (response.data.updates?.updatedRange) {
       const range = response.data.updates.updatedRange;
       const rowId = range.split("!")[1].split(":")[0].replace(/[A-Z]/g, "");
       orderRowMap.set(order.id, rowId);
       console.log(`Order ${order.id} added to Google Sheet at row ${rowId}`);
     }
-
-    console.log("Order added to Google Sheet successfully");
   } catch (error) {
-    // Log the error but don't throw it
     console.error("Error adding order to Google Sheet:", error);
-    // Continue execution - this is a non-critical error
+    throw error; // Re-throw to allow the caller to handle it
   }
 }
 
@@ -102,6 +150,9 @@ export async function updateOrderInGoogleSheet(order: OrderWithItems): Promise<v
   try {
     const auth = await getGoogleAuth();
     const sheets = google.sheets({ version: 'v4', auth });
+    
+    // Make sure the Orders sheet exists
+    await ensureSheetExists(sheets, SPREADSHEET_ID);
 
     // First, find the order's row by searching for the order ID
     if (!orderRowMap.has(order.id)) {
@@ -126,8 +177,9 @@ export async function updateOrderInGoogleSheet(order: OrderWithItems): Promise<v
       }
 
       if (rowNumber === -1) {
-        // Order not found in sheet
-        console.log(`Order ${order.id} not found in Google Sheet, cannot update`);
+        // Order not found in sheet, add it instead
+        console.log(`Order ${order.id} not found in Google Sheet, adding it`);
+        await addOrderToGoogleSheet(order);
         return;
       }
     }
@@ -135,10 +187,10 @@ export async function updateOrderInGoogleSheet(order: OrderWithItems): Promise<v
     const rowId = orderRowMap.get(order.id);
     console.log(`Updating order ${order.id} status to "${order.status}" at row ${rowId}`);
 
-    // Update only the status column (column H)
+    // Update only the status column (column J - index 9)
     await sheets.spreadsheets.values.update({
       spreadsheetId: SPREADSHEET_ID,
-      range: `Orders!H${rowId}`,
+      range: `Orders!J${rowId}`,
       valueInputOption: "USER_ENTERED",
       requestBody: {
         values: [[order.status]],
@@ -148,8 +200,6 @@ export async function updateOrderInGoogleSheet(order: OrderWithItems): Promise<v
     console.log(`Successfully updated order ${order.id} status in Google Sheet`);
   } catch (error) {
     console.error("Error updating order in Google Sheet:", error);
-    // Re-throw the error so the caller can handle it
     throw error;
   }
 }
-
