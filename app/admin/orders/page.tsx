@@ -2,30 +2,35 @@ import { getOrders } from "@/lib/orders"
 import { AdminOrdersTable } from "@/components/admin/admin-orders-table"
 import { AdminOrderFilters } from "@/components/admin/admin-order-filters"
 import { AdminShell } from "@/components/admin/admin-shell"
-import { ShoppingCart } from "lucide-react"
+import { OrderStatus } from "@prisma/client"
+
+interface AdminOrdersPageProps {
+  searchParams: {
+    status?: string
+  }
+}
 
 export default async function AdminOrdersPage({
   searchParams,
-}: {
-  searchParams: { [key: string]: string | string[] | undefined }
-}) {
-  const status = typeof searchParams.status === "string" ? searchParams.status : undefined
+}: AdminOrdersPageProps) {
+  // Type-safe way to handle the status parameter
+  let statusFilter: OrderStatus | undefined = undefined;
+  if (searchParams.status && Object.values(OrderStatus).includes(searchParams.status as OrderStatus)) {
+    statusFilter = searchParams.status as OrderStatus;
+  }
 
   const orders = await getOrders({
-    status: status as any,
+    status: statusFilter
   })
 
   return (
     <AdminShell>
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Orders</h1>
-          <p className="text-muted-foreground mt-1">View and manage customer orders</p>
-        </div>
-
+      <div className="container py-10">
+        <h1 className="text-3xl font-bold mb-6">Orders</h1>
         <AdminOrderFilters />
-
-        <AdminOrdersTable orders={orders} />
+        <div className="mt-6">
+          <AdminOrdersTable orders={orders} />
+        </div>
       </div>
     </AdminShell>
   )

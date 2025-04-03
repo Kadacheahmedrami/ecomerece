@@ -55,44 +55,41 @@ model VerificationToken {
 
 // Application Models
 model Product {
-  id          String      @id @default(cuid())
+  id          String   @id @default(cuid())
   name        String
   description String
   price       Float
   images      String[]
   category    String
-  stock       Int         @default(0)
-  visible     Boolean     @default(true)
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  orders      OrderItem[]
+  stock       Int      @default(0)
+  visible     Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  orders      Order[]
 }
 
 model Order {
-  id            String      @id @default(cuid())
+  id            String       @id @default(cuid())
   customerName  String
   customerEmail String
-  address       String
-  city          String
-  state         String
-  zipCode       String
-  country       String
+  city          String       // Algerian city
   phone         String
-  status        OrderStatus @default(PENDING)
-  total         Float
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
-  items         OrderItem[]
+  deliveryType  DeliveryType @default(HOME_DELIVERY)
+  status        OrderStatus  @default(PENDING)
+  quantity      Int          // Quantity of product ordered
+  productId     String
+  product       Product      @relation(fields: [productId], references: [id])
+  productPrice  Float        // Price of product at time of order
+  deliveryFee   Float        // Fee based on selected city
+  total         Float        // (productPrice * quantity) + deliveryFee
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
 }
 
-model OrderItem {
-  id        String  @id @default(cuid())
-  orderId   String
-  productId String
-  quantity  Int
-  price     Float
-  order     Order   @relation(fields: [orderId], references: [id])
-  product   Product @relation(fields: [productId], references: [id])
+model City {
+  id          String @id @default(cuid())
+  name        String @unique
+  deliveryFee Float
 }
 
 enum OrderStatus {
@@ -101,4 +98,9 @@ enum OrderStatus {
   SHIPPED
   DELIVERED
   CANCELLED
+}
+
+enum DeliveryType {
+  HOME_DELIVERY
+  LOCAL_AGENCY_PICKUP
 }

@@ -8,10 +8,8 @@ export type CustomerColumn = {
   customerName: string
   customerEmail: string
   phone: string
-  address: string
   city: string
-  country: string
-  zipCode: string
+  deliveryType: string
   createdAt: Date
 }
 
@@ -29,20 +27,16 @@ export const columns: ColumnDef<CustomerColumn>[] = [
     header: "Phone",
   },
   {
-    accessorKey: "address",
-    header: "Address",
-  },
-  {
     accessorKey: "city",
     header: "City",
   },
   {
-    accessorKey: "country",
-    header: "Country",
-  },
-  {
-    accessorKey: "zipCode",
-    header: "Zip Code",
+    accessorKey: "deliveryType",
+    header: "Delivery Type",
+    cell: ({ row }) => {
+      const deliveryType = row.getValue("deliveryType") as string
+      return deliveryType === "HOME_DELIVERY" ? "Home Delivery" : "Local Agency Pickup"
+    }
   },
   {
     accessorKey: "createdAt",

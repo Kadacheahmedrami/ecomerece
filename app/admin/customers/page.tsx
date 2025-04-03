@@ -11,10 +11,8 @@ async function getCustomers() {
       customerName: true,
       customerEmail: true,
       phone: true,
-      address: true,
       city: true,
-      country: true,
-      zipCode: true,
+      deliveryType: true,
       createdAt: true,
     },
     orderBy: {

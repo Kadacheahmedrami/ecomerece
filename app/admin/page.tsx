@@ -11,7 +11,8 @@ import {
   AlertCircle,
   BarChart3,
   CircleEllipsis,
-  CreditCard
+  CreditCard,
+  MapPin
 } from "lucide-react"
 import { AdminOrdersTable } from "@/components/admin/admin-orders-table"
 import { AdminStatsChart } from "@/components/admin/admin-stats-chart"
@@ -72,6 +73,12 @@ export default async function AdminDashboard() {
               <Link href="/admin/products/new" className="gap-1">
                 <Package className="h-4 w-4" />
                 Add Product
+              </Link>
+            </Button>
+            <Button asChild variant="outline" size="sm">
+              <Link href="/admin/cities" className="gap-1">
+                <MapPin className="h-4 w-4" />
+                Manage Cities
               </Link>
             </Button>
             <Button asChild size="sm">

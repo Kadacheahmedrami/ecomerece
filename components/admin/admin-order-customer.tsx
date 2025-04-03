@@ -1,12 +1,11 @@
+import { DeliveryType } from "@prisma/client"
+
 interface Order {
   customerName: string
   customerEmail: string
-  address: string
   city: string
-  state: string
-  zipCode: string
-  country: string
   phone: string
+  deliveryType: DeliveryType
 }
 
 interface AdminOrderCustomerProps {
@@ -29,10 +28,9 @@ export function AdminOrderCustomer({ order }: AdminOrderCustomerProps) {
         <p>{order.phone}</p>
       </div>
       <div>
-        <p className="text-sm font-medium text-muted-foreground">Shipping Address</p>
-        <p>{order.address}</p>
-        <p>{`${order.city}, ${order.state} ${order.zipCode}`}</p>
-        <p>{order.country}</p>
+        <p className="text-sm font-medium text-muted-foreground">Delivery Information</p>
+        <p>City: {order.city}</p>
+        <p>Delivery Type: {order.deliveryType === 'HOME_DELIVERY' ? 'Home Delivery' : 'Local Agency Pickup'}</p>
       </div>
     </div>
   )

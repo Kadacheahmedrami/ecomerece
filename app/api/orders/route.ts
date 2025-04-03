@@ -7,17 +7,20 @@ export async function POST(request: Request) {
   try {
     const body = await request.json()
 
+    // Calculate item count
+    const itemCount = body.items.reduce((sum: number, item: any) => sum + item.quantity, 0)
+
     // Create the order
     const order = await prisma.order.create({
       data: {
         customerName: body.customerName,
         customerEmail: body.customerEmail,
-        address: body.address,
         city: body.city,
-        state: body.state,
-        zipCode: body.zipCode,
-        country: body.country,
         phone: body.phone,
+        deliveryType: body.deliveryType || 'HOME_DELIVERY',
+        itemCount: itemCount,
+        subtotal: body.subtotal,
+        deliveryFee: body.deliveryFee,
         total: body.total,
         items: {
           create: body.items.map((item: any) => ({
@@ -39,7 +42,6 @@ export async function POST(request: Request) {
     // Add order to Google Sheet
     try {
       await addOrderToGoogleSheet(order)
-      console.log("Order added to Google Sheet");
     } catch (sheetError) {
       console.error("Error adding order to Google Sheet (non-critical):", sheetError);
       // Continue execution - this is a non-critical error

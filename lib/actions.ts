@@ -6,50 +6,44 @@ import { redirect } from "next/navigation"
 import { checkAdminAccess } from "./auth"
 import { addOrderToGoogleSheet, updateOrderInGoogleSheet } from "./google-sheets"
 import { supabase } from "./supabase"
+import { OrderStatus, DeliveryType } from "@prisma/client"
 
 interface OrderData {
   customerName: string
   customerEmail: string
-  address: string
   city: string
-  state: string
-  zipCode: string
-  country: string
   phone: string
+  deliveryType?: DeliveryType
   items: {
     productId: string
     quantity: number
     price: number
   }[]
+  subtotal: number
+  deliveryFee: number
   total: number
 }
 
 export async function createOrder(data: OrderData) {
+  // Only handle the first item for now - assuming single product orders
+  const item = data.items[0]
+  
+  // Create the order with direct product relationship
   const order = await prisma.order.create({
     data: {
       customerName: data.customerName,
       customerEmail: data.customerEmail,
-      address: data.address,
       city: data.city,
-      state: data.state,
-      zipCode: data.zipCode,
-      country: data.country,
       phone: data.phone,
+      deliveryType: data.deliveryType || 'HOME_DELIVERY',
+      quantity: item.quantity,
+      productId: item.productId,
+      productPrice: item.price,
+      deliveryFee: data.deliveryFee,
       total: data.total,
-      items: {
-        create: data.items.map((item) => ({
-          productId: item.productId,
-          quantity: item.quantity,
-          price: item.price,
-        })),
-      },
     },
     include: {
-      items: {
-        include: {
-          product: true,
-        },
-      },
+      product: true
     },
   })
 
@@ -190,8 +184,9 @@ export async function deleteProductAction(id: string) {
       }
     }
 
-    // Delete OrderItems
-    await prisma.orderItem.deleteMany({
+    // Delete associated orders (optional)
+    // If you want to keep order history, you might skip this step
+    await prisma.order.deleteMany({
       where: {
         productId: id
       }
@@ -217,7 +212,7 @@ export async function deleteProductAction(id: string) {
   }
 }
 
-export async function updateOrderStatusAction(id: string, status: string) {
+export async function updateOrderStatusAction(id: string, status: OrderStatus) {
   const isAdmin = await checkAdminAccess()
 
   if (!isAdmin) {
@@ -229,15 +224,11 @@ export async function updateOrderStatusAction(id: string, status: string) {
       id,
     },
     data: {
-      status: status as any,
+      status,
       updatedAt: new Date(),
     },
     include: {
-      items: {
-        include: {
-          product: true,
-        },
-      },
+      product: true
     },
   })
 

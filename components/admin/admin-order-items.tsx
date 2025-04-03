@@ -1,21 +1,15 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import Image from "next/image"
 import { formatCurrency } from "@/lib/utils"
-
-interface OrderItem {
-  id: string
-  quantity: number
-  price: number
-  product: {
-    id: string
-    name: string
-    images: string[]
-  }
-}
+import { Product } from "@prisma/client"
 
 interface Order {
-  items: OrderItem[]
+  quantity: number
+  productPrice: number
+  subtotal: number
+  deliveryFee: number
   total: number
+  product: Product
 }
 
 interface AdminOrderItemsProps {
@@ -36,24 +30,34 @@ export function AdminOrderItems({ order }: AdminOrderItemsProps) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {order.items.map((item) => (
-            <TableRow key={item.id}>
-              <TableCell>
-                <div className="relative h-10 w-10">
-                  <Image
-                    src={item.product.images[0] || "/placeholder.svg"}
-                    alt={item.product.name}
-                    fill
-                    className="object-cover rounded-md"
-                  />
-                </div>
-              </TableCell>
-              <TableCell className="font-medium">{item.product.name}</TableCell>
-              <TableCell className="text-right">{item.quantity}</TableCell>
-              <TableCell className="text-right">{formatCurrency(item.price)}</TableCell>
-              <TableCell className="text-right">{formatCurrency(item.price * item.quantity)}</TableCell>
-            </TableRow>
-          ))}
+          <TableRow>
+            <TableCell>
+              <div className="relative h-10 w-10">
+                <Image
+                  src={order.product.images[0] || "/placeholder.svg"}
+                  alt={order.product.name}
+                  fill
+                  className="object-cover rounded-md"
+                />
+              </div>
+            </TableCell>
+            <TableCell className="font-medium">{order.product.name}</TableCell>
+            <TableCell className="text-right">{order.quantity}</TableCell>
+            <TableCell className="text-right">{formatCurrency(order.productPrice)}</TableCell>
+            <TableCell className="text-right">{formatCurrency(order.productPrice * order.quantity)}</TableCell>
+          </TableRow>
+          <TableRow>
+            <TableCell colSpan={4} className="text-right font-medium">
+              Subtotal
+            </TableCell>
+            <TableCell className="text-right">{formatCurrency(order.subtotal)}</TableCell>
+          </TableRow>
+          <TableRow>
+            <TableCell colSpan={4} className="text-right font-medium">
+              Delivery Fee
+            </TableCell>
+            <TableCell className="text-right">{formatCurrency(order.deliveryFee)}</TableCell>
+          </TableRow>
           <TableRow>
             <TableCell colSpan={4} className="text-right font-medium">
               Total

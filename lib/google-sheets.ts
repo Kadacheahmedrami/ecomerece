@@ -1,14 +1,11 @@
 import { google } from "googleapis"
-import { Order, OrderItem } from "@prisma/client"
+import { Order, Product } from "@prisma/client"
 import path from 'path'
 import fs from 'fs'
 
-interface OrderWithItems extends Order {
-  items: (OrderItem & {
-    product: {
-      name: string;
-    };
-  })[];
+// Order with product information for Google Sheets
+interface OrderWithProduct extends Order {
+  product: Product;
 }
 
 const SPREADSHEET_ID = process.env.GOOGLE_SHEETS_SPREADSHEET_ID
@@ -49,7 +46,6 @@ async function ensureSheetExists(sheets: any, spreadsheetId: string): Promise<vo
     
     // If Orders sheet doesn't exist, create it
     if (!sheetExists) {
-      console.log("Creating 'Orders' sheet...");
       await sheets.spreadsheets.batchUpdate({
         spreadsheetId: spreadsheetId,
         requestBody: {
@@ -65,27 +61,24 @@ async function ensureSheetExists(sheets: any, spreadsheetId: string): Promise<vo
         }
       });
       
-      // Add headers to the new sheet
+      // Initialize the sheet with headers
       await sheets.spreadsheets.values.update({
         spreadsheetId: spreadsheetId,
-        range: 'Orders!A1:M1',
+        range: 'Orders!A1:N1',
         valueInputOption: 'USER_ENTERED',
         requestBody: {
-          values: [['Order ID', 'Customer Name', 'Email', 'Address', 'City', 'State', 'Zip Code', 'Country', 'Phone', 'Status', 'Total', 'Items', 'Created At']]
+          values: [['Order ID', 'Customer Name', 'Email', 'City', 'Phone', 'Delivery Type', 'Quantity', 'Product', 'Product Price', 'Subtotal', 'Delivery Fee', 'Total', 'Status', 'Created At']]
         }
       });
-      
-      console.log("'Orders' sheet created successfully with headers");
     }
   } catch (error) {
-    console.error("Error ensuring sheet exists:", error);
     throw error;
   }
 }
 
-export async function addOrderToGoogleSheet(order: OrderWithItems): Promise<void> {
+export async function addOrderToGoogleSheet(order: OrderWithProduct): Promise<void> {
   if (!SPREADSHEET_ID) {
-    console.warn("Google Sheets ID not configured, skipping sheet update");
+    console.log("Google Sheets ID not configured, skipping adding order");
     return;
   }
 
@@ -93,55 +86,60 @@ export async function addOrderToGoogleSheet(order: OrderWithItems): Promise<void
     const auth = await getGoogleAuth();
     const sheets = google.sheets({ version: 'v4', auth });
     
-    // Make sure the Orders sheet exists before proceeding
+    // Make sure the Orders sheet exists
     await ensureSheetExists(sheets, SPREADSHEET_ID);
-    
-    console.log(order);
-    // Format order items
-    const items = order.items.map(item => 
-      `${item.product.name} (${item.quantity}x) - $${item.price.toFixed(2)}`
-    ).join(', ');
 
-    const values = [
-      [
-        order.id,
-        order.customerName,
-        order.customerEmail,
-        order.address,
-        order.city,
-        order.state,
-        order.zipCode,
-        order.country,
-        order.phone,
-        order.status,
-        order.total.toFixed(2),
-        items,
-        new Date().toISOString()
-      ]
+    // Format the date
+    const createdAt = new Date(order.createdAt).toLocaleString();
+    
+    // Build the row data
+    const rowData = [
+      order.id, 
+      order.customerName, 
+      order.customerEmail, 
+      order.city, 
+      order.phone, 
+      order.deliveryType, 
+      order.quantity.toString(), 
+      order.product.name, 
+      formatPrice(order.product.price), 
+      formatPrice(order.subtotal), 
+      formatPrice(order.deliveryFee), 
+      formatPrice(order.totalPrice), 
+      order.status,
+      createdAt
     ];
 
+    // Append the order to the sheet
     const response = await sheets.spreadsheets.values.append({
       spreadsheetId: SPREADSHEET_ID,
-      range: 'Orders!A2',  // Start appending after the header row
+      range: 'Orders!A:N',
       valueInputOption: 'USER_ENTERED',
+      insertDataOption: 'INSERT_ROWS',
       requestBody: {
-        values: values,
+        values: [rowData]
       }
     });
 
-    if (response.data.updates?.updatedRange) {
-      const range = response.data.updates.updatedRange;
-      const rowId = range.split("!")[1].split(":")[0].replace(/[A-Z]/g, "");
-      orderRowMap.set(order.id, rowId);
-      console.log(`Order ${order.id} added to Google Sheet at row ${rowId}`);
+    // Get the row number that was just added
+    if (response.data.updates) {
+      const updatedRange = response.data.updates.updatedRange;
+      const match = updatedRange?.match(/Orders!A(\d+):/);
+      if (match && match[1]) {
+        const rowNumber = match[1];
+        console.log(`Added order ${order.id} to Google Sheet at row ${rowNumber}`);
+        orderRowMap.set(order.id, rowNumber);
+      }
     }
+
+    console.log(`Successfully added order ${order.id} to Google Sheet`);
   } catch (error) {
     console.error("Error adding order to Google Sheet:", error);
-    throw error; // Re-throw to allow the caller to handle it
+    throw error;
   }
 }
 
-export async function updateOrderInGoogleSheet(order: OrderWithItems): Promise<void> {
+export async function updateOrderInGoogleSheet(order: OrderWithProduct): Promise<void> {
   if (!SPREADSHEET_ID) {
     console.log("Google Sheets ID not configured, skipping update");
     return;
@@ -187,10 +185,10 @@ export async function updateOrderInGoogleSheet(order: OrderWithItems): Promise<v
     const rowId = orderRowMap.get(order.id);
     console.log(`Updating order ${order.id} status to "${order.status}" at row ${rowId}`);
 
-    // Update only the status column (column J - index 9)
+    // Update only the status column (column M - index 13)
     await sheets.spreadsheets.values.update({
       spreadsheetId: SPREADSHEET_ID,
-      range: `Orders!J${rowId}`,
+      range: `Orders!M${rowId}`,
       valueInputOption: "USER_ENTERED",
       requestBody: {
         values: [[order.status]],

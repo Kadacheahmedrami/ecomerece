@@ -1,106 +1,113 @@
-import { prisma } from "@/lib/prisma"
-import { redirect } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
+import { getOrderById } from "@/lib/orders"
+import { CheckCircle2, ArrowRight } from "lucide-react"
 import Link from "next/link"
-import { CheckCircle2 } from "lucide-react"
-import { Separator } from "@/components/ui/separator"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { formatCurrency, formatDate } from "@/lib/utils"
+import Image from "next/image"
+import { notFound } from "next/navigation"
 
 export default async function CheckoutSuccessPage({
   searchParams,
 }: {
-  searchParams: { orderId: string }
+  searchParams: { orderId?: string }
 }) {
-  const orderId = searchParams.orderId
-
-  if (!orderId) {
-    redirect("/")
+  if (!searchParams.orderId) {
+    notFound()
   }
 
-  const order = await prisma.order.findUnique({
-    where: { id: orderId },
-    include: {
-      items: {
-        include: {
-          product: true,
-        },
-      },
-    },
-  })
+  const order = await getOrderById(searchParams.orderId)
 
   if (!order) {
-    redirect("/")
+    notFound()
   }
 
   return (
-    <div className="container mx-auto my-auto max-w-3xl py-8 space-y-8">
-      <Card>
-        <CardHeader className="text-center space-y-2">
-          <CheckCircle2 className="w-12 h-12 text-green-500 mx-auto" />
-          <CardTitle className="text-2xl">Order Confirmed!</CardTitle>
-          <p className="text-muted-foreground">
-            Thank you for your purchase. Your order has been confirmed.
-          </p>
+    <div className="container max-w-4xl py-12">
+      <div className="mb-8 text-center">
+        <div className="mb-4 flex justify-center">
+          <CheckCircle2 className="h-12 w-12 text-green-500" />
+        </div>
+        <h1 className="mb-2 text-3xl font-bold">Order Confirmed!</h1>
+        <p className="text-muted-foreground">
+          Thank you for your purchase. Your order has been confirmed and will be shipped soon.
+        </p>
+      </div>
+
+      <div className="grid gap-8 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Order Summary</CardTitle>
+            <CardDescription>Order #{order.id.slice(-6)}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex justify-between">
+                <span className="font-medium">Subtotal:</span>
+                <span>{formatCurrency(order.subtotal)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="font-medium">Delivery Fee:</span>
+                <span>{formatCurrency(order.deliveryFee)}</span>
+              </div>
+              <div className="flex justify-between border-t pt-2">
+                <span className="font-medium">Total:</span>
+                <span className="font-bold">{formatCurrency(order.total)}</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Delivery Information</CardTitle>
+            <CardDescription>
+              {order.deliveryType === 'HOME_DELIVERY' ? 'Home Delivery' : 'Local Agency Pickup'}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-1">
+              <p className="font-medium">{order.customerName}</p>
+              <p>{order.customerEmail}</p>
+              <p>{order.phone}</p>
+              <p>City: {order.city}</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card className="mt-8">
+        <CardHeader>
+          <CardTitle>Order Item ({order.quantity})</CardTitle>
         </CardHeader>
-
-        <CardContent className="space-y-6">
-          {/* Order Details */}
-          <div className="space-y-2">
-            <h3 className="font-semibold">Order Details</h3>
-            <div className="grid grid-cols-2 gap-1 text-sm">
-              <p className="text-muted-foreground">Order ID:</p>
-              <p>{order.id}</p>
-              <p className="text-muted-foreground">Status:</p>
-              <p className="capitalize">{order.status.toLowerCase()}</p>
-              <p className="text-muted-foreground">Total Amount:</p>
-              <p>${order.total.toFixed(2)}</p>
+        <CardContent>
+          <div className="flex items-center space-x-4">
+            <div className="relative h-16 w-16 overflow-hidden rounded-md">
+              <Image
+                src={order.product.images[0] || "/placeholder.svg"}
+                alt={order.product.name}
+                fill
+                className="object-cover"
+              />
             </div>
-          </div>
-
-          <Separator />
-
-          {/* Shipping Information */}
-          <div className="space-y-2">
-            <h3 className="font-semibold">Shipping Information</h3>
-            <div className="text-sm space-y-1">
-              <p>{order.customerName}</p>
-              <p>{order.address}</p>
-              <p>
-                {order.city}, {order.state} {order.zipCode}
-              </p>
-              <p>{order.country}</p>
+            <div className="flex-1">
+              <h3 className="font-medium">{order.product.name}</h3>
+              <p className="text-sm text-muted-foreground">Quantity: {order.quantity}</p>
+              <p className="text-sm">Price: {formatCurrency(order.productPrice)}</p>
             </div>
-          </div>
-
-          <Separator />
-
-          {/* Order Items */}
-          <div className="space-y-2">
-            <h3 className="font-semibold">Order Items</h3>
-            <div className="space-y-2">
-              {order.items.map((item) => (
-                <div
-                  key={item.id}
-                  className="flex justify-between items-center text-sm"
-                >
-                  <div className="flex items-center gap-2">
-                    <span>{item.product.name}</span>
-                    <span className="text-muted-foreground">
-                      × {item.quantity}
-                    </span>
-                  </div>
-                  <span>${item.price.toFixed(2)}</span>
-                </div>
-              ))}
+            <div className="text-right font-medium">
+              {formatCurrency(order.productPrice * order.quantity)}
             </div>
-          </div>
-
-          <div className="pt-6 text-center">
-            <Link href="/">
-              <Button>Continue Shopping</Button>
-            </Link>
           </div>
         </CardContent>
+        <CardFooter>
+          <Button asChild className="w-full">
+            <Link href="/">
+              Continue Shopping
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Link>
+          </Button>
+        </CardFooter>
       </Card>
     </div>
   )

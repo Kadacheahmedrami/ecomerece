@@ -6,10 +6,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { updateOrderStatusAction } from "@/lib/actions"
 import { useToast } from "@/components/ui/use-toast"
 import { useRouter } from "next/navigation"
+import { OrderStatus } from "@prisma/client"
 
 interface Order {
   id: string
-  status: string
+  status: OrderStatus
 }
 
 interface AdminOrderStatusUpdateProps {
@@ -17,7 +18,7 @@ interface AdminOrderStatusUpdateProps {
 }
 
 export function AdminOrderStatusUpdate({ order }: AdminOrderStatusUpdateProps) {
-  const [status, setStatus] = useState(order.status)
+  const [status, setStatus] = useState<OrderStatus>(order.status)
   const [isUpdating, setIsUpdating] = useState(false)
   const { toast } = useToast()
   const router = useRouter()
@@ -28,7 +29,7 @@ export function AdminOrderStatusUpdate({ order }: AdminOrderStatusUpdateProps) {
     setIsUpdating(true)
 
     try {
-      await updateOrderStatusAction(order.id, status)
+      await updateOrderStatusAction(order.id, status as OrderStatus)
       toast({
         title: "Status updated",
         description: "The order status has been updated successfully.",
@@ -55,7 +56,7 @@ export function AdminOrderStatusUpdate({ order }: AdminOrderStatusUpdateProps) {
         >
           Order Status
         </label>
-        <Select value={status} onValueChange={setStatus}>
+        <Select value={status} onValueChange={(value) => setStatus(value as OrderStatus)}>
           <SelectTrigger id="status">
             <SelectValue placeholder="Select status" />
           </SelectTrigger>

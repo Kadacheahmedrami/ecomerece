@@ -1,10 +1,15 @@
 import { formatDate, formatCurrency } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
+import { OrderStatus, DeliveryType } from "@prisma/client"
 
 interface Order {
   id: string
-  status: string
+  status: OrderStatus
+  quantity: number
+  subtotal: number
+  deliveryFee: number
   total: number
+  deliveryType: DeliveryType
   createdAt: Date
   updatedAt: Date
 }
@@ -36,6 +41,22 @@ export function AdminOrderDetails({ order }: AdminOrderDetailsProps) {
           <p>{formatDate(order.updatedAt)}</p>
         </div>
         <div>
+          <p className="text-sm font-medium text-muted-foreground">Quantity</p>
+          <p>{order.quantity} {order.quantity === 1 ? 'item' : 'items'}</p>
+        </div>
+        <div>
+          <p className="text-sm font-medium text-muted-foreground">Delivery Type</p>
+          <p>{order.deliveryType === 'HOME_DELIVERY' ? 'Home Delivery' : 'Local Agency Pickup'}</p>
+        </div>
+        <div>
+          <p className="text-sm font-medium text-muted-foreground">Subtotal</p>
+          <p>{formatCurrency(order.subtotal)}</p>
+        </div>
+        <div>
+          <p className="text-sm font-medium text-muted-foreground">Delivery Fee</p>
+          <p>{formatCurrency(order.deliveryFee)}</p>
+        </div>
+        <div>
           <p className="text-sm font-medium text-muted-foreground">Total Amount</p>
           <p className="font-medium">{formatCurrency(order.total)}</p>
         </div>
@@ -44,7 +65,7 @@ export function AdminOrderDetails({ order }: AdminOrderDetailsProps) {
   )
 }
 
-function OrderStatusBadge({ status }: { status: string }) {
+function OrderStatusBadge({ status }: { status: OrderStatus }) {
   let variant: "default" | "secondary" | "destructive" | "outline" = "default"
 
   switch (status) {

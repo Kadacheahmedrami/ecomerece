@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { z } from "zod"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -23,20 +23,28 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { useRouter } from "next/navigation"
 import { CheckCircle2 } from "lucide-react"
 import { createOrder } from "@/lib/actions"
+import { toast } from "sonner"
+import { MinusIcon, PlusIcon } from "lucide-react"
 
 // Form validation schema
 const formSchema = z.object({
-  fullName: z.string().min(2, { message: "Name must be at least 2 characters" }),
-  email: z.string().email({ message: "Please enter a valid email address" }),
-  address: z.string().min(5, { message: "Please enter your full address" }),
-  city: z.string().min(2, { message: "Please enter your city" }),
-  zipCode: z.string().min(1, { message: "Please enter your zip code" }),
-  country: z.string().min(2, { message: "Please enter your country" }),
-  phone: z.string().min(5, { message: "Please enter a valid phone number" }),
+  fullName: z.string().min(2, { message: "Name must be at least 2 characters" }).nonempty("Full name is required"),
+  email: z.string().email({ message: "Please enter a valid email address" }).nonempty("Email is required"),
+  city: z.string().min(2, { message: "Please enter your city" }).nonempty("City is required"),
+  phone: z.string().min(5, { message: "Please enter a valid phone number" }).nonempty("Phone number is required"),
+  deliveryType: z.enum(['HOME_DELIVERY', 'LOCAL_AGENCY_PICKUP'], {
+    required_error: "Please select a delivery method",
+  }),
 })
 
 type FormValues = z.infer<typeof formSchema>
@@ -45,22 +53,73 @@ export function PurchaseForm({ product }: { product: Product }) {
   const [showConfirmation, setShowConfirmation] = useState(false)
   const [orderCompleted, setOrderCompleted] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [cities, setCities] = useState<{ id: string, name: string, deliveryFee: number }[]>([])
+  const [deliveryFee, setDeliveryFee] = useState(0)
+  const [isLoadingCities, setIsLoadingCities] = useState(true)
+  const [quantity, setQuantity] = useState(1)
   const router = useRouter()
+
+  // Fetch cities on component mount
+  useEffect(() => {
+    async function loadCities() {
+      setIsLoadingCities(true)
+      try {
+        const response = await fetch('/api/cities')
+        if (!response.ok) {
+          throw new Error('Failed to fetch cities')
+        }
+        const cityData = await response.json()
+        setCities(cityData)
+      } catch (error) {
+        console.error("Error loading cities:", error)
+      } finally {
+        setIsLoadingCities(false)
+      }
+    }
+    
+    loadCities()
+  }, [])
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       fullName: "",
       email: "",
-      address: "",
       city: "",
-      zipCode: "",
-      country: "",
       phone: "",
+      deliveryType: "HOME_DELIVERY",
     },
   })
 
+  // Update delivery fee when city changes
+  useEffect(() => {
+    const city = form.watch("city")
+    if (city) {
+      async function updateDeliveryFee() {
+        try {
+          const response = await fetch(`/api/cities/delivery-fee?city=${encodeURIComponent(city)}`)
+          if (!response.ok) {
+            throw new Error('Failed to fetch delivery fee')
+          }
+          const data = await response.json()
+          setDeliveryFee(data.deliveryFee)
+        } catch (error) {
+          console.error("Error getting delivery fee:", error)
+          setDeliveryFee(10.0) // Default fee
+        }
+      }
+      
+      updateDeliveryFee()
+    }
+  }, [form.watch("city")])
+
   function onSubmit(data: FormValues) {
+    // Validate that we have a delivery fee
+    if (deliveryFee <= 0) {
+      toast.error("Please select a valid city for delivery fee calculation");
+      return;
+    }
+    
     // Show confirmation dialog
     setShowConfirmation(true)
   }
@@ -68,21 +127,32 @@ export function PurchaseForm({ product }: { product: Product }) {
   async function handleConfirmPurchase() {
     setIsSubmitting(true)
     try {
+      // Calculate prices
+      const productPrice = product.price; // Current price of the product
+      const subtotal = productPrice * quantity;
+      const total = subtotal + deliveryFee;
+
+      // Validate that the product is in stock
+      if (product.stock < quantity) {
+        toast.error(`Sorry, only ${product.stock} items available in stock`);
+        setIsSubmitting(false);
+        return;
+      }
+
       const orderId = await createOrder({
         customerName: form.getValues().fullName,
         customerEmail: form.getValues().email,
-        address: form.getValues().address,
         city: form.getValues().city,
-        state: "", // Not collected in this form
-        zipCode: form.getValues().zipCode,
-        country: form.getValues().country,
         phone: form.getValues().phone,
+        deliveryType: form.getValues().deliveryType,
         items: [{
           productId: product.id,
-          quantity: 1,
-          price: product.price
+          quantity: quantity,
+          price: productPrice
         }],
-        total: product.price
+        subtotal: subtotal,
+        deliveryFee: deliveryFee,
+        total: total
       })
 
       setShowConfirmation(false)
@@ -90,7 +160,8 @@ export function PurchaseForm({ product }: { product: Product }) {
       router.push(`/checkout/success?orderId=${orderId}`)
     } catch (error) {
       console.error("Error creating order:", error)
-      // You might want to show an error toast here
+      toast.error("Failed to create order. Please try again.");
+      setShowConfirmation(false);
     } finally {
       setIsSubmitting(false)
     }
@@ -106,7 +177,7 @@ export function PurchaseForm({ product }: { product: Product }) {
         <h2 className="text-xl font-semibold mb-4">Complete Your Purchase</h2>
         
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <FormField
               control={form.control}
               name="fullName"
@@ -137,57 +208,46 @@ export function PurchaseForm({ product }: { product: Product }) {
             
             <FormField
               control={form.control}
-              name="address"
+              name="city"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Address</FormLabel>
-                  <FormControl>
-                    <Textarea placeholder="Street address" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="city"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>City</FormLabel>
-                    <FormControl>
-                      <Input placeholder="City" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="zipCode"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Zip Code</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Zip Code" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            
-            <FormField
-              control={form.control}
-              name="country"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Country</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Country" {...field} />
-                  </FormControl>
+                  <FormLabel>City</FormLabel>
+                  {isLoadingCities ? (
+                    <div className="h-10 w-full rounded-md border border-input bg-muted animate-pulse" />
+                  ) : cities.length > 0 ? (
+                    <Select 
+                      onValueChange={field.onChange} 
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select your city" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {cities.map(city => (
+                          <SelectItem key={city.id} value={city.name}>
+                            {city.name} (Delivery: ${city.deliveryFee.toFixed(2)})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <>
+                      <Input
+                        placeholder="Enter your city"
+                        {...field}
+                        onChange={(e) => {
+                          field.onChange(e);
+                          // Set a default delivery fee
+                          setDeliveryFee(10.0);
+                        }}
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        No predefined cities available. Using standard delivery fee ($10.00).
+                      </p>
+                    </>
+                  )}
                   <FormMessage />
                 </FormItem>
               )}
@@ -207,7 +267,98 @@ export function PurchaseForm({ product }: { product: Product }) {
               )}
             />
             
-            <div className="pt-4">
+            <FormField
+              control={form.control}
+              name="deliveryType"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Delivery Method</FormLabel>
+                  <Select 
+                    onValueChange={field.onChange} 
+                    defaultValue={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select delivery method" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="HOME_DELIVERY">Home Delivery</SelectItem>
+                      <SelectItem value="LOCAL_AGENCY_PICKUP">Local Agency Pickup</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            {/* Add quantity field */}
+            <div>
+              <FormLabel>Quantity</FormLabel>
+              <div className="flex items-center mt-1.5">
+                <Button 
+                  type="button"
+                  variant="outline" 
+                  size="icon"
+                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                  disabled={quantity <= 1}
+                >
+                  <MinusIcon className="h-4 w-4" />
+                </Button>
+                <div className="w-16 text-center font-medium">
+                  {quantity}
+                </div>
+                <Button 
+                  type="button"
+                  variant="outline" 
+                  size="icon"
+                  onClick={() => setQuantity(Math.min(product.stock, quantity + 1))}
+                  disabled={quantity >= product.stock}
+                >
+                  <PlusIcon className="h-4 w-4" />
+                </Button>
+              </div>
+              {product.stock < 10 && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Only {product.stock} items left in stock
+                </p>
+              )}
+            </div>
+            
+            {/* Price Summary */}
+            <div className="space-y-2 pt-4 border-t">
+              <h3 className="font-medium">Order Summary</h3>
+              <div className="flex justify-between text-sm">
+                <span>Price per item:</span>
+                <span>${product.price.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span>Quantity:</span>
+                <span>{quantity}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span>Subtotal:</span>
+                <span>${(product.price * quantity).toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span>Delivery Fee:</span>
+                {isLoadingCities ? (
+                  <span className="w-16 h-4 bg-muted animate-pulse rounded"></span>
+                ) : (
+                  <span>${deliveryFee.toFixed(2)}</span>
+                )}
+              </div>
+              <div className="flex justify-between font-medium">
+                <span>Total:</span>
+                {isLoadingCities ? (
+                  <span className="w-20 h-5 bg-muted animate-pulse rounded"></span>
+                ) : (
+                  <span>${(product.price * quantity + deliveryFee).toFixed(2)}</span>
+                )}
+              </div>
+            </div>
+            
+            <div>
               <Button type="submit" className="w-full">Place Order</Button>
             </div>
           </form>
@@ -220,18 +371,21 @@ export function PurchaseForm({ product }: { product: Product }) {
           <DialogHeader>
             <DialogTitle>Confirm Your Purchase</DialogTitle>
             <DialogDescription>
-              You are about to purchase {product.name} for ${product.price.toFixed(2)}. Would you like to proceed?
+              Please review your order details before continuing.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-2">
+          <div className="space-y-2 py-3">
             <p><strong>Product:</strong> {product.name}</p>
-            <p><strong>Price:</strong> ${product.price.toFixed(2)}</p>
-            <p><strong>Shipping To:</strong> {form.getValues().fullName}</p>
+            <p><strong>Quantity:</strong> {quantity}</p>
+            <p><strong>Subtotal:</strong> ${(product.price * quantity).toFixed(2)}</p>
+            <p><strong>Delivery Fee:</strong> ${deliveryFee.toFixed(2)}</p>
+            <p><strong>Total:</strong> ${(product.price * quantity + deliveryFee).toFixed(2)}</p>
+            <p><strong>Delivery Type:</strong> {form.getValues().deliveryType === 'HOME_DELIVERY' ? 'Home Delivery' : 'Local Agency Pickup'}</p>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowConfirmation(false)}>Return</Button>
+            <Button variant="outline" onClick={() => setShowConfirmation(false)}>Cancel</Button>
             <Button onClick={handleConfirmPurchase} disabled={isSubmitting}>
-              {isSubmitting ? "Processing..." : "Confirm"}
+              {isSubmitting ? "Processing..." : "Confirm Purchase"}
             </Button>
           </DialogFooter>
         </DialogContent>
