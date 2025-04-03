@@ -1,24 +1,24 @@
-import { google } from "googleapis"
-import { Order, Product } from "@prisma/client"
-import path from 'path'
-import fs from 'fs'
+import { google } from "googleapis";
+import { Order, Product } from "@prisma/client";
 
 // Order with product information for Google Sheets
 interface OrderWithProduct extends Order {
   product: Product;
 }
 
-const SPREADSHEET_ID = process.env.GOOGLE_SHEETS_SPREADSHEET_ID
-const CREDENTIALS_PATH = process.env.GOOGLE_SHEETS_CREDENTIALS
+const SPREADSHEET_ID = process.env.GOOGLE_SHEETS_SPREADSHEET_ID;
+const CREDENTIALS_JSON = process.env.GOOGLE_SHEETS_CREDENTIALS;
 
 // Store order IDs and their corresponding row numbers
-const orderRowMap = new Map<string, string>()
+const orderRowMap = new Map<string, string>();
 
 async function getGoogleAuth() {
   try {
-    // Read credentials from the JSON file
-    const credentialsPath = path.resolve(process.cwd(), CREDENTIALS_PATH || './secrets.json')
-    const credentials = JSON.parse(fs.readFileSync(credentialsPath, 'utf-8'))
+    if (!CREDENTIALS_JSON) {
+      throw new Error("Google Sheets credentials not found in environment variables.");
+    }
+    // Parse the JSON credentials from the environment variable
+    const credentials = JSON.parse(CREDENTIALS_JSON);
 
     const auth = new google.auth.GoogleAuth({
       credentials,
@@ -37,11 +37,11 @@ async function ensureSheetExists(sheets: any, spreadsheetId: string): Promise<vo
   try {
     // Get all sheets in the spreadsheet
     const response = await sheets.spreadsheets.get({
-      spreadsheetId: spreadsheetId
+      spreadsheetId: spreadsheetId,
     });
     
     const sheetExists = response.data.sheets.some(
-      (sheet: any) => sheet.properties.title === 'Orders'
+      (sheet: any) => sheet.properties.title === "Orders"
     );
     
     // If Orders sheet doesn't exist, create it
@@ -53,22 +53,39 @@ async function ensureSheetExists(sheets: any, spreadsheetId: string): Promise<vo
             {
               addSheet: {
                 properties: {
-                  title: 'Orders',
-                }
-              }
-            }
-          ]
-        }
+                  title: "Orders",
+                },
+              },
+            },
+          ],
+        },
       });
       
       // Initialize the sheet with headers
       await sheets.spreadsheets.values.update({
         spreadsheetId: spreadsheetId,
-        range: 'Orders!A1:N1',
-        valueInputOption: 'USER_ENTERED',
+        range: "Orders!A1:N1",
+        valueInputOption: "USER_ENTERED",
         requestBody: {
-          values: [['Order ID', 'Customer Name', 'Email', 'City', 'Phone', 'Delivery Type', 'Quantity', 'Product', 'Product Price', 'Subtotal', 'Delivery Fee', 'Total', 'Status', 'Created At']]
-        }
+          values: [
+            [
+              "Order ID",
+              "Customer Name",
+              "Email",
+              "City",
+              "Phone",
+              "Delivery Type",
+              "Quantity",
+              "Product",
+              "Product Price",
+              "Subtotal",
+              "Delivery Fee",
+              "Total",
+              "Status",
+              "Created At",
+            ],
+          ],
+        },
       });
     }
   } catch (error) {
@@ -89,7 +106,7 @@ export async function addOrderToGoogleSheet(order: OrderWithProduct): Promise<vo
 
   try {
     const auth = await getGoogleAuth();
-    const sheets = google.sheets({ version: 'v4', auth });
+    const sheets = google.sheets({ version: "v4", auth });
     
     // Make sure the Orders sheet exists
     await ensureSheetExists(sheets, SPREADSHEET_ID);
@@ -121,12 +138,12 @@ export async function addOrderToGoogleSheet(order: OrderWithProduct): Promise<vo
     // Append the order to the sheet
     const response = await sheets.spreadsheets.values.append({
       spreadsheetId: SPREADSHEET_ID,
-      range: 'Orders!A:N',
-      valueInputOption: 'USER_ENTERED',
-      insertDataOption: 'INSERT_ROWS',
+      range: "Orders!A:N",
+      valueInputOption: "USER_ENTERED",
+      insertDataOption: "INSERT_ROWS",
       requestBody: {
-        values: [rowData]
-      }
+        values: [rowData],
+      },
     });
 
     // Get the row number that was just added
@@ -155,7 +172,7 @@ export async function updateOrderInGoogleSheet(order: OrderWithProduct): Promise
 
   try {
     const auth = await getGoogleAuth();
-    const sheets = google.sheets({ version: 'v4', auth });
+    const sheets = google.sheets({ version: "v4", auth });
     
     // Make sure the Orders sheet exists
     await ensureSheetExists(sheets, SPREADSHEET_ID);
