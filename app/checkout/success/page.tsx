@@ -23,7 +23,7 @@ export default async function CheckoutSuccessPage({
   }
 
   return (
-    <div className="container max-w-4xl py-12">
+    <div className="container mx-auto max-w-4xl py-12">
       <div className="mb-8 text-center">
         <div className="mb-4 flex justify-center">
           <CheckCircle2 className="h-12 w-12 text-green-500" />

@@ -76,6 +76,11 @@ async function ensureSheetExists(sheets: any, spreadsheetId: string): Promise<vo
   }
 }
 
+// Helper function to format price values
+function formatPrice(price: number): string {
+  return price.toFixed(2);
+}
+
 export async function addOrderToGoogleSheet(order: OrderWithProduct): Promise<void> {
   if (!SPREADSHEET_ID) {
     console.log("Google Sheets ID not configured, skipping adding order");
@@ -92,6 +97,9 @@ export async function addOrderToGoogleSheet(order: OrderWithProduct): Promise<vo
     // Format the date
     const createdAt = new Date(order.createdAt).toLocaleString();
     
+    // Calculate subtotal
+    const subtotal = order.product.price * order.quantity;
+    
     // Build the row data
     const rowData = [
       order.id, 
@@ -103,9 +111,9 @@ export async function addOrderToGoogleSheet(order: OrderWithProduct): Promise<vo
       order.quantity.toString(), 
       order.product.name, 
       formatPrice(order.product.price), 
-      formatPrice(order.subtotal), 
+      formatPrice(subtotal), 
       formatPrice(order.deliveryFee), 
-      formatPrice(order.totalPrice), 
+      formatPrice(order.total), 
       order.status,
       createdAt
     ];
