@@ -30,7 +30,12 @@ export function ProductCard({ product }: { product: ExtendedProduct }) {
             src={product.images[0] || "/placeholder.svg"} 
             alt={product.name} 
             fill 
-            className={`object-cover transition-transform duration-700 ${isHovered ? 'scale-110' : 'scale-100'}`} 
+            className={`object-cover transition-transform duration-700 ${isHovered ? 'scale-110' : 'scale-100'}`}
+            priority={true}
+            quality={80}
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            placeholder="blur"
+            blurDataURL="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iI2YxZjFmMSIvPjwvc3ZnPg=="
           />
           
           <div className="absolute top-2 left-2 flex flex-col gap-1 z-10">
@@ -61,11 +66,10 @@ export function ProductCard({ product }: { product: ExtendedProduct }) {
           </div>
           
           <Button size="sm" variant="default" asChild>
-            <Link href={`/buy-now/${product.id}`}>Buy Now</Link>
+            <Link href={`/products/${product.id}`} prefetch={true}>View Product</Link>
           </Button>
         </div>
       </div>
     </div>
   )
 }
-
