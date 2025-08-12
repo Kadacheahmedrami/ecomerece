@@ -18,7 +18,7 @@ export default async function Home({ searchParams }: HomeProps) {
       <div className=" mx-auto pt-8">
         <div className="max-w-3xl mx-auto text-center mb-12">
           <h1 className="text-4xl font-bold mb-4">Discover Our Products</h1>
-          <p className="text-muted-foreground mb-6">Find high-quality products at affordable prices</p>
+        
         </div>
         <div className="min-h-[80vh] px-4 w-full overflow-y-auto">
           <ProductCard search={search} />

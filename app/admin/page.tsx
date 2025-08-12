@@ -41,6 +41,14 @@ interface DashboardStats {
   chartData?: ChartData[]
 }
 
+// helper to format numbers as Algerian Dinar (DZD)
+const formatCurrency = (value: number) =>
+  new Intl.NumberFormat("fr-DZ", {
+    style: "currency",
+    currency: "DZD",
+    maximumFractionDigits: 2,
+  }).format(value)
+
 const Card = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
   <div
     className={`bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 ${className}`}
@@ -134,12 +142,16 @@ const ChartSkeleton = () => (
   <div className="h-[250px] sm:h-[300px] lg:h-[350px] flex items-end justify-between p-2 sm:p-4 space-x-1 sm:space-x-2">
     {Array.from({ length: 6 }).map((_, index) => (
       <div key={index} className="flex flex-col items-center space-y-1 sm:space-y-2 flex-1">
-        <Skeleton className="w-full rounded-t-sm" style={{ height: `${Math.random() * 100 + 50}px` }} />
+        <div
+          className="w-full rounded-t-sm animate-pulse bg-gray-200 dark:bg-gray-700"
+          style={{ height: `${Math.random() * 100 + 50}px` }}
+        />
         <Skeleton className="h-3 w-8" />
       </div>
     ))}
   </div>
 )
+
 
 const TableSkeleton = () => (
   <div className="overflow-x-auto -mx-4 sm:mx-0">
@@ -309,7 +321,7 @@ const OrdersTable = ({ orders }: { orders: Order[] }) => (
               </td>
               <td className="py-2 sm:py-3 px-2 sm:px-4">
                 <span className="font-medium text-gray-900 dark:text-gray-100 text-xs sm:text-sm">
-                  ${order.total.toFixed(2)}
+                  {formatCurrency(order.total)}
                 </span>
               </td>
               <td className="py-2 sm:py-3 px-2 sm:px-4">
@@ -366,7 +378,7 @@ const OverviewTab = ({ stats, loading }: { stats: DashboardStats | null; loading
             <span>Revenue</span>
           </div>
           <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
-            {loading ? <Skeleton className="h-4 w-20" /> : `Total: $${stats?.totalRevenue?.toLocaleString() || "0"}`}
+            {loading ? <Skeleton className="h-4 w-20" /> : `Total: ${formatCurrency(stats?.totalRevenue ?? 0)}`}
           </div>
         </div>
       </CardFooter>
@@ -420,8 +432,7 @@ const StatCard = ({
   borderColor: string
   badge?: { text: string; color: string }
 }) => (
-  <div className={`bg-black border border-gray-800 rounded-lg p-6 relative overflow-hidden`}>
-    {/* Colored bottom border */}
+  <div className={`bg-black border border-gray-800 rounded-lg p-6 relative overflow-hidden`}>{/* Colored bottom border */}
     <div className={`absolute bottom-0 left-0 right-0 h-1 ${borderColor}`}></div>
 
     <div className="flex items-center justify-between mb-4">
@@ -603,7 +614,7 @@ export default function AdminDashboard() {
             {/* Total Revenue */}
             <StatCard
               title="Total Revenue"
-              value={`$${stats?.totalRevenue?.toLocaleString() || "0"}`}
+              value={formatCurrency(stats?.totalRevenue ?? 0)}
               change={`+${stats?.revenueGrowth || 0}%`}
               changeLabel="from last month"
               icon={DollarSign}

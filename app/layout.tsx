@@ -6,7 +6,7 @@ import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/toaster"
 import Header from "@/components/header"
 import { getServerSession } from "next-auth/next"
-
+import { checkAdminAccess } from "@/lib/auth"
 
 const inter = Inter({ 
   subsets: ["latin"],
@@ -80,7 +80,8 @@ interface RootLayoutProps {
 
 export default async function RootLayout({ children }: RootLayoutProps) {
   const session = await getServerSession()
-
+  const isadmin = await checkAdminAccess()
+  console.log(session)
   return (
     <html lang="en" suppressHydrationWarning className={inter.variable}>
       <body className={`${inter.className} antialiased`}>
@@ -92,7 +93,7 @@ export default async function RootLayout({ children }: RootLayoutProps) {
           storageKey="modernshop-theme"
         >
           <div className="relative flex min-h-screen flex-col">
-            <Header session={session} />
+            <Header session={session} isadmin={isadmin} />
             <main className="flex-1 relative">
               {children}
             </main>

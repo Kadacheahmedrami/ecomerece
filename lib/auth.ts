@@ -26,12 +26,39 @@ export async function checkAdminAccess() {
     return false
   }
 
-  // Log information about the admin check
+  // Check if user is admin
   const adminEmail = process.env.ADMIN_EMAIL;
   const isAdmin = user.email === adminEmail;
   
-
-
   return isAdmin;
 }
 
+export async function getSessionWithAdmin() {
+  const session = await getSession()
+  
+  if (!session?.user?.email) {
+    return null
+  }
+
+  // Add admin flag to session
+  const adminEmail = process.env.ADMIN_EMAIL;
+  const isAdmin = session.user.email === adminEmail;
+
+  return {
+    ...session,
+    user: {
+      ...session.user,
+      admin: isAdmin
+    }
+  }
+}
+
+export async function getCurrentUserWithAdmin() {
+  const sessionWithAdmin = await getSessionWithAdmin()
+  
+  if (!sessionWithAdmin?.user) {
+    return null
+  }
+
+  return sessionWithAdmin.user
+}

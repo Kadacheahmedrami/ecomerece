@@ -33,6 +33,15 @@ export default function ProductPage({ params }: { params: { id: string } }) {
     }
   }, [params.id, router])
 
+  // Format price in English and append "DA"
+  const formatDZD = (price: number | undefined | null) => {
+    const num = typeof price === "number" && !isNaN(price) ? price : 0
+    return `${new Intl.NumberFormat("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(num)} DA`
+  }
+
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -82,7 +91,7 @@ export default function ProductPage({ params }: { params: { id: string } }) {
         {/* Right Side - Info + Buy Now + Thumbnails */}
         <div className="flex flex-col">
           <h1 className="text-3xl font-bold">{product.name}</h1>
-          <p className="text-2xl font-bold mt-2">${product.price.toFixed(2)}</p>
+          <p className="text-2xl font-bold mt-2">{formatDZD(product.price)}</p>
 
           <div className="mt-4 prose max-w-none">
             <p>{product.description}</p>

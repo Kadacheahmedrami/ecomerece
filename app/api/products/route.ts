@@ -16,49 +16,37 @@ interface ProductData {
 
 export async function POST(request: Request) {
   try {
-    console.log("🚀 PRODUCT API: POST request received");
     
     // Check admin access
-    console.log("🔒 PRODUCT API: Checking admin access");
+
     const isAdmin = await checkAdminAccess()
-    console.log("🔒 PRODUCT API: Admin check result:", isAdmin);
     
     if (!isAdmin) {
-      console.log("❌ PRODUCT API: Unauthorized - admin check failed");
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
     
     // Log the raw request for debugging
     const clone1 = request.clone();
     const bodyText = await clone1.text();
-    console.log("📦 PRODUCT API: Raw request body:", bodyText);
+
     
     // Parse the request body from a fresh clone
     const clone2 = request.clone();
     let data: ProductData;
     try {
       data = await clone2.json();
-      console.log("📋 PRODUCT API: Parsed body:", JSON.stringify(data, null, 2));
-      console.log("💲 PRODUCT API: Price type:", typeof data.price, "value:", data.price);
-      console.log("📦 PRODUCT API: Stock type:", typeof data.stock, "value:", data.stock);
-      console.log("🖼️ PRODUCT API: Images type:", Array.isArray(data.images), "value:", data.images);
+ 
     } catch (parseError) {
       console.error("❌ PRODUCT API: Failed to parse request body:", parseError);
       return NextResponse.json({ error: "Invalid JSON in request body" }, { status: 400 })
     }
     
-    // Validate required fields
-    console.log("✅ PRODUCT API: Validating fields");
+
     if (!data.name || !data.description || !data.category) {
-      console.log("❌ PRODUCT API: Missing required fields");
-      console.log("  - name:", data.name);
-      console.log("  - description:", data.description);
-      console.log("  - category:", data.category);
+ 
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
-    
-    // Create the product
-    console.log("⏳ PRODUCT API: Creating product in database");
+
     try {
       const product = await prisma.product.create({
         data: {
@@ -144,11 +132,7 @@ export async function GET(request: Request) {
     const category = searchParams.get("category")
     const search = searchParams.get("search")
     
-    console.log("🔍 PRODUCT API: GET request with params:", {
-      limit,
-      category,
-      search
-    })
+
 
     // Build the where clause
     let whereClause: any = {
@@ -187,7 +171,6 @@ export async function GET(request: Request) {
       ]
     }
 
-    console.log("📋 PRODUCT API: Where clause:", JSON.stringify(whereClause, null, 2))
 
     const products = await prisma.product.findMany({
       where: whereClause,
@@ -197,7 +180,6 @@ export async function GET(request: Request) {
       take: limit,
     })
 
-    console.log(`✅ PRODUCT API: Found ${products.length} products`)
 
     return NextResponse.json(products)
   } catch (error) {

@@ -23,14 +23,23 @@ import { CheckCircle2 } from "lucide-react"
 import { toast } from "sonner"
 import { MinusIcon, PlusIcon } from "lucide-react"
 
+// helper to format numbers in English and append DA
+const formatDA = (value: number | undefined | null) => {
+  const num = typeof value === "number" && !isNaN(value) ? value : 0
+  return `${new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(num)} DA`
+}
+
 // Form validation schema
 const formSchema = z.object({
-  fullName: z.string().min(2, { message: "Name must be at least 2 characters" }).nonempty("Full name is required"),
-  email: z.string().email({ message: "Please enter a valid email address" }).nonempty("Email is required"),
-  city: z.string().min(2, { message: "Please enter your city" }).nonempty("City is required"),
-  phone: z.string().min(5, { message: "Please enter a valid phone number" }).nonempty("Phone number is required"),
+  fullName: z.string().min(2, { message: "يجب أن يكون الاسم على الأقل حرفين" }).nonempty("الاسم الكامل مطلوب"),
+  email: z.string().email({ message: "الرجاء إدخال بريد إلكتروني صالح" }).nonempty("البريد الإلكتروني مطلوب"),
+  city: z.string().min(2, { message: "الرجاء إدخال مدينتك" }).nonempty("المدينة is required"),
+  phone: z.string().min(5, { message: "الرجاء إدخال رقم هاتف صالح" }).nonempty("رقم الهاتف مطلوب"),
   deliveryType: z.enum(["HOME_DELIVERY", "LOCAL_AGENCY_PICKUP"], {
-    required_error: "Please select a delivery method",
+    required_error: "يرجى اختيار طريقة التوصيل",
   }),
 })
 
@@ -102,7 +111,7 @@ export function PurchaseForm({ product }: { product: Product }) {
   function onSubmit(data: FormValues) {
     // Validate that we have a delivery fee
     if (deliveryFee <= 0) {
-      toast.error("Please select a valid city for delivery fee calculation")
+      toast.error("يرجى اختيار مدينة صالحة لحساب رسوم التوصيل")
       return
     }
 
@@ -166,23 +175,25 @@ export function PurchaseForm({ product }: { product: Product }) {
       })
   }
 
-  function handleGoHome() {
-    router.push("/")
-  }
+
 
   return (
     <>
-      <div className="bg-white dark:bg-gray-950 p-6 rounded-lg border shadow-sm">
-        <h2 className="text-xl font-semibold mb-4">Complete Your Purchase</h2>
+      <div className="bg-white dark:bg-gray-950 p-6 rounded-lg border shadow-sm text-base md:text-lg">
+     
 
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <Form  {...form}>
+      
+          <form dir="rtl" onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <h2 className="text-2xl mx-auto  md:text-3xl font-bold mb-4">إتمام الشراء</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              
             <FormField
               control={form.control}
               name="fullName"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Full Name</FormLabel>
+                  <FormLabel className="font-bold text-sm md:text-base">الاسم الكامل</FormLabel>
                   <FormControl>
                     <Input placeholder="John Doe" {...field} />
                   </FormControl>
@@ -196,7 +207,7 @@ export function PurchaseForm({ product }: { product: Product }) {
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email</FormLabel>
+                  <FormLabel className="font-bold text-sm md:text-base">البريد الإلكتروني</FormLabel>
                   <FormControl>
                     <Input type="email" placeholder="your@email.com" {...field} />
                   </FormControl>
@@ -210,20 +221,20 @@ export function PurchaseForm({ product }: { product: Product }) {
               name="city"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>City</FormLabel>
+                  <FormLabel className="font-bold text-sm md:text-base">المدينة</FormLabel>
                   {isLoadingCities ? (
                     <div className="h-10 w-full rounded-md border border-input bg-muted animate-pulse" />
                   ) : cities.length > 0 ? (
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select your city" />
+                          <SelectValue placeholder="اختر مدينتك" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
                         {cities.map((city) => (
                           <SelectItem key={city.id} value={city.name}>
-                            {city.name} (Delivery: ${city.deliveryFee.toFixed(2)})
+                            {city.name} (Delivery: {formatDA(city.deliveryFee)})
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -231,7 +242,7 @@ export function PurchaseForm({ product }: { product: Product }) {
                   ) : (
                     <>
                       <Input
-                        placeholder="Enter your city"
+                        placeholder="أدخل مدينتك"
                         {...field}
                         onChange={(e) => {
                           field.onChange(e)
@@ -240,7 +251,7 @@ export function PurchaseForm({ product }: { product: Product }) {
                         }}
                       />
                       <p className="text-xs text-muted-foreground mt-1">
-                        No predefined cities available. Using standard delivery fee ($10.00).
+                        لا توجد مدن معرفة مسبقًا. يتم استخدام رسوم توصيل قياسية ({formatDA(10.0)}).
                       </p>
                     </>
                   )}
@@ -254,9 +265,9 @@ export function PurchaseForm({ product }: { product: Product }) {
               name="phone"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Phone Number</FormLabel>
+                  <FormLabel className="font-bold text-sm md:text-base">رقم الهاتف</FormLabel>
                   <FormControl>
-                    <Input placeholder="Phone Number" {...field} />
+                    <Input placeholder="رقم الهاتف" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -268,16 +279,16 @@ export function PurchaseForm({ product }: { product: Product }) {
               name="deliveryType"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Delivery Method</FormLabel>
+                  <FormLabel className="font-bold text-sm md:text-base">طريقة التوصيل</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select delivery method" />
+                        <SelectValue placeholder="اختر طريقة التوصيل" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="HOME_DELIVERY">Home Delivery</SelectItem>
-                      <SelectItem value="LOCAL_AGENCY_PICKUP">Local Agency Pickup</SelectItem>
+                      <SelectItem value="HOME_DELIVERY">توصيل إلى المنزل</SelectItem>
+                      <SelectItem value="LOCAL_AGENCY_PICKUP">استلام من وكالة محلية</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -287,7 +298,7 @@ export function PurchaseForm({ product }: { product: Product }) {
 
             {/* Add quantity field */}
             <div>
-              <FormLabel>Quantity</FormLabel>
+              <FormLabel className="font-bold text-sm md:text-base">الكمية</FormLabel>
               <div className="flex items-center mt-1.5">
                 <Button
                   type="button"
@@ -298,7 +309,7 @@ export function PurchaseForm({ product }: { product: Product }) {
                 >
                   <MinusIcon className="h-4 w-4" />
                 </Button>
-                <div className="w-16 text-center font-medium">{quantity}</div>
+                <div className="w-16 text-center font-bold text-lg md:text-xl">{quantity}</div>
                 <Button
                   type="button"
                   variant="outline"
@@ -310,48 +321,49 @@ export function PurchaseForm({ product }: { product: Product }) {
                 </Button>
               </div>
               {product.stock < 10 && (
-                <p className="text-xs text-muted-foreground mt-1">Only {product.stock} items left in stock</p>
+                <p className="text-xs text-muted-foreground mt-1">تبقى {product.stock} قطعة فقط في المخزون</p>
               )}
             </div>
 
             {/* Price Summary */}
-            <div className="space-y-2 pt-4 border-t">
-              <h3 className="font-medium">Order Summary</h3>
-              <div className="flex justify-between text-sm">
-                <span>Price per item:</span>
-                <span>${product.price.toFixed(2)}</span>
+            <div className="space-y-2 pt-4 border-t md:col-span-2">
+              <h3 className="font-medium">ملخص الطلب</h3>
+              <div className="flex justify-between text-sm md:text-base font-semibold">
+                <span>سعر القطعة:</span>
+                <span>{formatDA(product.price)}</span>
               </div>
-              <div className="flex justify-between text-sm">
-                <span>Quantity:</span>
+              <div className="flex justify-between text-sm md:text-base font-semibold">
+                <span>الكمية:</span>
                 <span>{quantity}</span>
               </div>
-              <div className="flex justify-between text-sm">
-                <span>Subtotal:</span>
-                <span>${(product.price * quantity).toFixed(2)}</span>
+              <div className="flex justify-between text-sm md:text-base font-semibold">
+                <span>المجموع الفرعي:</span>
+                <span>{formatDA(product.price * quantity)}</span>
               </div>
-              <div className="flex justify-between text-sm">
-                <span>Delivery Fee:</span>
+              <div className="flex justify-between text-sm md:text-base font-semibold">
+                <span>رسوم التوصيل:</span>
                 {isLoadingCities ? (
                   <span className="w-16 h-4 bg-muted animate-pulse rounded"></span>
                 ) : (
-                  <span>${deliveryFee.toFixed(2)}</span>
+                  <span>{formatDA(deliveryFee)}</span>
                 )}
               </div>
-              <div className="flex justify-between font-medium">
-                <span>Total:</span>
+              <div className="flex justify-between text-lg md:text-xl font-bold">
+                <span>الإجمالي:</span>
                 {isLoadingCities ? (
                   <span className="w-20 h-5 bg-muted animate-pulse rounded"></span>
                 ) : (
-                  <span>${(product.price * quantity + deliveryFee).toFixed(2)}</span>
+                  <span>{formatDA(product.price * quantity + deliveryFee)}</span>
                 )}
               </div>
             </div>
 
-            <div>
+            <div className="md:col-span-2">
               <Button type="submit" className="w-full">
-                Place Order
+                إتمام الطلب
               </Button>
             </div>
+          </div>
           </form>
         </Form>
       </div>
@@ -360,65 +372,63 @@ export function PurchaseForm({ product }: { product: Product }) {
       <Dialog open={showConfirmation} onOpenChange={setShowConfirmation}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Confirm Your Purchase</DialogTitle>
-            <DialogDescription>Please review your order details before continuing.</DialogDescription>
+            <DialogTitle className="text-lg md:text-xl font-bold">تأكيد الشراء</DialogTitle>
+            <DialogDescription className="text-sm md:text-base font-medium">يرجى مراجعة تفاصيل الطلب قبل المتابعة.</DialogDescription>
           </DialogHeader>
           <div className="space-y-2 py-3">
             <p>
-              <strong>Product:</strong> {product.name}
+              <strong>المنتج:</strong> {product.name}
             </p>
             <p>
-              <strong>Quantity:</strong> {quantity}
+              <strong>الكمية:</strong> {quantity}
             </p>
             <p>
-              <strong>Subtotal:</strong> ${(product.price * quantity).toFixed(2)}
+              <strong>المجموع الفرعي:</strong> {formatDA(product.price * quantity)}
             </p>
             <p>
-              <strong>Delivery Fee:</strong> ${deliveryFee.toFixed(2)}
+              <strong>رسوم التوصيل:</strong> {formatDA(deliveryFee)}
             </p>
             <p>
-              <strong>Total:</strong> ${(product.price * quantity + deliveryFee).toFixed(2)}
+              <strong>الإجمالي:</strong> {formatDA(product.price * quantity + deliveryFee)}
             </p>
             <p>
               <strong>Delivery Type:</strong>{" "}
-              {form.getValues().deliveryType === "HOME_DELIVERY" ? "Home Delivery" : "Local Agency Pickup"}
+              {form.getValues().deliveryType === "HOME_DELIVERY" ? "توصيل إلى المنزل" : "استلام من وكالة محلية"}
             </p>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowConfirmation(false)}>
-              Cancel
+              إلغاء
             </Button>
             <Button onClick={handleConfirmPurchase} disabled={isSubmitting}>
-              {isSubmitting ? "Processing..." : "Confirm Purchase"}
+              {isSubmitting ? "جاري المعالجة..." : "تأكيد الشراء"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Order Completed Dialog */}
+      {/* تم إتمام الطلب Dialog */}
       <Dialog open={orderCompleted} onOpenChange={setOrderCompleted}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <CheckCircle2 className="h-5 w-5 text-green-500" />
-              Order Completed
+              تم إتمام الطلب
             </DialogTitle>
-            <DialogDescription>Your order has been placed successfully. Thank you for your purchase!</DialogDescription>
+            <DialogDescription className="text-sm md:text-base font-medium">تم تقديم طلبك بنجاح. شكرًا لشرائك!</DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
             <p>
-              <strong>Product:</strong> {product.name}
+              <strong>المنتج:</strong> {product.name}
             </p>
             <p>
-              <strong>Price:</strong> ${product.price.toFixed(2)}
+              <strong>السعر:</strong> {formatDA(product.price)}
             </p>
             <p className="text-sm text-muted-foreground mt-2">
-              A confirmation email has been sent to your email address.
+              تم إرسال رسالة تأكيد إلى بريدك الإلكتروني.
             </p>
           </div>
-          <DialogFooter>
-            <Button onClick={handleGoHome}>Return to Home</Button>
-          </DialogFooter>
+    
         </DialogContent>
       </Dialog>
     </>
