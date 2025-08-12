@@ -19,7 +19,7 @@ async function getProducts(params: {
   if (params.category) searchParams.set('category', params.category)
   if (params.visible) searchParams.set('visible', params.visible)
 
-  const response = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/admin/products?${searchParams}`, {
+  const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/admin/products?${searchParams}`, {
     cache: 'no-store'
   })
 
