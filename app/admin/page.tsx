@@ -345,10 +345,7 @@ const OverviewTab = ({ stats, loading }: { stats: DashboardStats | null; loading
             <CardTitle>Sales Overview</CardTitle>
             <CardDescription>Monthly revenue for the current year</CardDescription>
           </div>
-          <Button variant="outline" size="sm" disabled={loading}>
-            <CircleEllipsis className="h-3 sm:h-4 w-3 sm:w-4 mr-1 sm:mr-2" />
-            Options
-          </Button>
+      
         </div>
       </CardHeader>
       <CardContent className="pt-0">

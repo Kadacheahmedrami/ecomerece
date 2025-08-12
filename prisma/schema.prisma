@@ -7,6 +7,8 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  // Add connection pooling settings
+
 }
 
 // NextAuth.js Models
@@ -68,6 +70,11 @@ model Product {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   orders      Order[]
+
+  // Add indexes for better performance
+  @@index([category])
+  @@index([visible])
+  @@index([createdAt])
 }
 
 model Order {
@@ -86,12 +93,19 @@ model Order {
   total         Float        // (productPrice * quantity) + deliveryFee
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
+
+  // Add indexes for better performance
+  @@index([status])
+  @@index([createdAt])
+  @@index([productId])
 }
 
 model City {
   id          String @id @default(cuid())
   name        String @unique
   deliveryFee Float
+
+  @@index([name])
 }
 
 enum OrderStatus {
