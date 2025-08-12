@@ -14,7 +14,7 @@ interface EditProductPageProps {
 
 async function getProduct(id: string): Promise<Product | null> {
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/admin/products/${id}`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/admin/products/${id}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

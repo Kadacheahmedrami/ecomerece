@@ -4,7 +4,7 @@ import { CitiesManager } from "@/components/admin/cities-manager"
 
 async function getCities() {
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/admin/cities`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/admin/cities`, {
       cache: 'no-store' // Ensure fresh data on each request
     })
     
