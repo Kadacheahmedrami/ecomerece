@@ -1,17 +1,38 @@
 import { formatDate, formatCurrency } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
-import { OrderStatus, DeliveryType } from "@prisma/client"
+
+// Use the same types as in your page component
+type OrderStatus = 'PENDING' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED'
+
+interface Product {
+  id: string
+  name: string
+  description: string
+  price: number
+  images: string[]
+  category: string
+  stock: number
+  visible: boolean
+  createdAt: Date
+  updatedAt: Date
+}
 
 interface Order {
   id: string
   status: OrderStatus
+  customerName: string
+  customerEmail: string
+  phone: string
+  city: string
+  deliveryType: string // Changed from DeliveryType to string to match your page
   quantity: number
+  productPrice: number
   subtotal: number
   deliveryFee: number
   total: number
-  deliveryType: DeliveryType
-  createdAt: Date
-  updatedAt: Date
+  createdAt: string // Changed from Date to string to match your page
+  updatedAt: string // Added this field and made it string to match your page
+  product: Product
 }
 
 interface AdminOrderDetailsProps {
@@ -34,11 +55,11 @@ export function AdminOrderDetails({ order }: AdminOrderDetailsProps) {
         </div>
         <div>
           <p className="text-sm font-medium text-muted-foreground">Date Placed</p>
-          <p>{formatDate(order.createdAt)}</p>
+          <p>{formatDate(new Date(order.createdAt))}</p>
         </div>
         <div>
           <p className="text-sm font-medium text-muted-foreground">Last Updated</p>
-          <p>{formatDate(order.updatedAt)}</p>
+          <p>{formatDate(new Date(order.updatedAt))}</p>
         </div>
         <div>
           <p className="text-sm font-medium text-muted-foreground">Quantity</p>
@@ -88,4 +109,3 @@ function OrderStatusBadge({ status }: { status: OrderStatus }) {
 
   return <Badge variant={variant}>{status.charAt(0) + status.slice(1).toLowerCase()}</Badge>
 }
-

@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: ecommerce_db
+    environment:
+      POSTGRES_DB: ecommerce
+      POSTGRES_USER: ecommerce_user
+      POSTGRES_PASSWORD: secure_password_123
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - ecommerce_network
+    restart: unless-stopped
+
+  adminer:
+    image: adminer:4.8.1
+    container_name: ecommerce_adminer
+    ports:
+      - "8080:8080"
+    networks:
+      - ecommerce_network
+    restart: unless-stopped
+    depends_on:
+      - postgres
+
+volumes:
+  postgres_data:
+
+networks:
+  ecommerce_network:
+    driver: bridge

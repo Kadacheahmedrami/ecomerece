@@ -1,25 +1,105 @@
-import { getOrderById } from "@/lib/orders"
-import { CheckCircle2, ArrowRight } from "lucide-react"
+'use client'
+
+import { useState, useEffect } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
+import { CheckCircle2, ArrowRight, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { formatCurrency, formatDate } from "@/lib/utils"
 import Image from "next/image"
-import { notFound } from "next/navigation"
 
-export default async function CheckoutSuccessPage({
-  searchParams,
-}: {
-  searchParams: { orderId?: string }
-}) {
-  if (!searchParams.orderId) {
-    notFound()
+interface Order {
+  id: string
+  customerName: string
+  customerEmail: string
+  phone: string
+  city: string
+  deliveryType: 'HOME_DELIVERY' | 'LOCAL_AGENCY_PICKUP'
+  subtotal: number
+  deliveryFee: number
+  total: number
+  quantity: number
+  productPrice: number
+  product: {
+    id: string
+    name: string
+    images: string[]
+  }
+  createdAt: Date
+  updatedAt: Date
+}
+
+export default function CheckoutSuccessPage() {
+  const [order, setOrder] = useState<Order | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const orderId = searchParams.get('orderId')
+
+  useEffect(() => {
+    if (!orderId) {
+      router.push('/404')
+      return
+    }
+
+    setLoading(true)
+    
+    fetch(`/api/orders/${orderId}`)
+      .then(response => {
+        if (!response.ok) {
+          if (response.status === 404) {
+            router.push('/404')
+            return Promise.reject(new Error('Order not found'))
+          }
+          return Promise.reject(new Error(`Failed to fetch order: ${response.status}`))
+        }
+        return response.json()
+      })
+      .then(orderData => {
+        setOrder(orderData)
+      })
+      .catch(err => {
+        setError(err instanceof Error ? err.message : 'Failed to load order')
+      })
+      .finally(() => {
+        setLoading(false)
+      })
+  }, [orderId, router])
+
+  if (loading) {
+    return (
+      <div className="container mx-auto max-w-4xl py-12">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center space-y-4">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto" />
+            <p className="text-muted-foreground">Loading order details...</p>
+          </div>
+        </div>
+      </div>
+    )
   }
 
-  const order = await getOrderById(searchParams.orderId)
+  if (error) {
+    return (
+      <div className="container mx-auto max-w-4xl py-12">
+        <div className="text-center space-y-4">
+          <h1 className="text-2xl font-bold text-red-600">Error</h1>
+          <p className="text-muted-foreground">{error}</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   if (!order) {
-    notFound()
+    return null
   }
 
   return (

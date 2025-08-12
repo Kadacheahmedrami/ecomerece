@@ -1,7 +1,23 @@
-import { getCities } from "@/lib/cities"
 import { checkAdminAccess } from "@/lib/auth"
 import { AdminShell } from "@/components/admin/admin-shell"
 import { CitiesManager } from "@/components/admin/cities-manager"
+
+async function getCities() {
+  try {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/admin/cities`, {
+      cache: 'no-store' // Ensure fresh data on each request
+    })
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch cities')
+    }
+    
+    return await response.json()
+  } catch (error) {
+    console.error('Error fetching cities:', error)
+    return []
+  }
+}
 
 export default async function AdminCitiesPage() {
   const isAdmin = await checkAdminAccess()
@@ -18,10 +34,10 @@ export default async function AdminCitiesPage() {
   const cities = await getCities()
 
   return (
-    <AdminShell> 
+
       <div className="container py-10">
         <CitiesManager initialCities={cities} />
       </div>
-    </AdminShell>
+
   )
-} 
+}

@@ -3,12 +3,23 @@ import Image from "next/image"
 import { formatCurrency } from "@/lib/utils"
 import { Product } from "@prisma/client"
 
+// Define OrderStatus enum to match your existing types
+type OrderStatus = 'PENDING' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED'
+
 interface Order {
+  id: string
+  status: OrderStatus
+  customerName: string
+  customerEmail: string
+  phone: string
+  city: string
+  deliveryType: string
   quantity: number
   productPrice: number
   subtotal: number
   deliveryFee: number
   total: number
+  createdAt: string
   product: Product
 }
 
@@ -34,7 +45,7 @@ export function AdminOrderItems({ order }: AdminOrderItemsProps) {
             <TableCell>
               <div className="relative h-10 w-10">
                 <Image
-                  src={order.product.images[0] || "/placeholder.svg"}
+                  src={order.product.images?.[0] || "/placeholder.svg"}
                   alt={order.product.name}
                   fill
                   className="object-cover rounded-md"
@@ -69,4 +80,3 @@ export function AdminOrderItems({ order }: AdminOrderItemsProps) {
     </div>
   )
 }
-

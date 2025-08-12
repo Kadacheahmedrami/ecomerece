@@ -3,7 +3,7 @@ import { NextResponse } from "next/server"
 import { checkAdminAccess } from "@/lib/auth"
 import { updateOrderInGoogleSheet } from "@/lib/google-sheets"
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const isAdmin = await checkAdminAccess()
 
   if (!isAdmin) {
@@ -11,16 +11,15 @@ export async function GET(request: Request, { params }: { params: { id: string }
   }
 
   try {
+    // Extract id from params - Next.js 15 params are now a Promise
+    const { id } = await params;
+    
     const order = await prisma.order.findUnique({
       where: {
-        id: params.id,
+        id: id,
       },
       include: {
-        items: {
-          include: {
-            product: true,
-          },
-        },
+        product: true, // Include the product details
       },
     })
 
@@ -35,7 +34,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
   }
 }
 
-export async function PATCH(request: Request, { params }: { params: { id: string } }) {
+export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const isAdmin = await checkAdminAccess()
 
   if (!isAdmin) {
@@ -43,7 +42,8 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   }
 
   try {
-    const { id } = params;
+    // Extract id from params - Next.js 15 params are now a Promise
+    const { id } = await params;
     
     const body = await request.json()
 
@@ -55,11 +55,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
         status: body.status
       },
       include: {
-        items: {
-          include: {
-            product: true,
-          },
-        },
+        product: true, // Include the product details
       },
     })
 
@@ -75,4 +71,3 @@ export async function PATCH(request: Request, { params }: { params: { id: string
     return NextResponse.json({ error: "Failed to update order" }, { status: 500 })
   }
 }
-

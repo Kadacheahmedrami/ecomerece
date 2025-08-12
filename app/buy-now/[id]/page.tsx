@@ -1,9 +1,24 @@
-import { getProductById } from "@/lib/products"
-import { notFound } from "next/navigation"
+'use client'
+
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import Image from "next/image"
 import { PurchaseForm } from "@/components/purchase-form"
 import { Separator } from "@/components/ui/separator"
-import { ShoppingBag, Check } from "lucide-react"
+import { ShoppingBag, Check, Loader2 } from "lucide-react"
+
+interface Product {
+  id: string
+  name: string
+  description: string
+  price: number
+  category: string
+  stock: number
+  images: string[]
+  visible: boolean
+  createdAt: Date
+  updatedAt: Date
+}
 
 interface BuyNowPageProps {
   params: {
@@ -11,18 +26,76 @@ interface BuyNowPageProps {
   }
 }
 
-export default async function BuyNowPage({ params }: BuyNowPageProps) {
-  const id = await Promise.resolve(params.id)
-  
-  const product = await getProductById(id)
+export default function BuyNowPage({ params }: BuyNowPageProps) {
+  const [product, setProduct] = useState<Product | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const router = useRouter()
+
+  useEffect(() => {
+    if (params.id) {
+      setLoading(true)
+      
+      fetch(`/api/products/${params.id}`)
+        .then(response => {
+          if (!response.ok) {
+            if (response.status === 404) {
+              router.push('/404')
+              return Promise.reject(new Error('Product not found'))
+            }
+            return Promise.reject(new Error(`Failed to fetch product: ${response.status}`))
+          }
+          return response.json()
+        })
+        .then(productData => {
+          setProduct(productData)
+        })
+        .catch(err => {
+          setError(err instanceof Error ? err.message : 'Failed to load product')
+        })
+        .finally(() => {
+          setLoading(false)
+        })
+    }
+  }, [params.id, router])
+
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-8 max-w-5xl">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center space-y-4">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto" />
+            <p className="text-muted-foreground">Loading product...</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto px-4 py-8 max-w-5xl">
+        <div className="text-center space-y-4">
+          <h1 className="text-2xl font-bold text-red-600">Error</h1>
+          <p className="text-muted-foreground">{error}</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   if (!product) {
-    return notFound()
+    return null
   }
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-5xl">
-      <h1 className="text-3xl font-bold mb-6">Buy Now</h1>
+
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
         <div className="space-y-6">
@@ -79,4 +152,4 @@ export default async function BuyNowPage({ params }: BuyNowPageProps) {
       </div>
     </div>
   )
-} 
+}

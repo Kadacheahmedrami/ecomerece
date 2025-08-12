@@ -1,7 +1,7 @@
 import { DataTable } from "@/components/ui/data-table"
 import { columns } from "@/components/admin/columns"
 import {prisma} from "@/lib/prisma"
-import { AdminShell } from "@/components/admin/admin-shell";
+
 
 
 async function getCustomers() {
@@ -27,7 +27,7 @@ export default async function CustomersPage() {
   const customers = await getCustomers();
 
   return (
-    <AdminShell>    <div >
+   <div >
     <div className="flex-1 space-y-4 p-8 pt-6">
       <div className="flex items-center justify-between">
         <h2 className="text-3xl font-bold tracking-tight">Customers</h2>
@@ -35,6 +35,6 @@ export default async function CustomersPage() {
       <DataTable columns={columns} data={customers} searchKey="customerEmail" />
     </div>
   </div>
-        </AdminShell>
+ 
   )
 } 

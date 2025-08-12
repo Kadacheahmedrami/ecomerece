@@ -136,21 +136,72 @@ export async function POST(request: Request) {
   }
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    // Parse URL parameters
+    const { searchParams } = new URL(request.url)
+    const limit = parseInt(searchParams.get("limit") || "12")
+    const category = searchParams.get("category")
+    const search = searchParams.get("search")
+    
+    console.log("🔍 PRODUCT API: GET request with params:", {
+      limit,
+      category,
+      search
+    })
+
+    // Build the where clause
+    let whereClause: any = {
+      visible: true,
+    }
+
+    // Add category filter
+    if (category) {
+      whereClause.category = {
+        contains: category,
+        mode: "insensitive"
+      }
+    }
+
+    // Add search filter
+    if (search) {
+      whereClause.OR = [
+        {
+          name: {
+            contains: search,
+            mode: "insensitive"
+          }
+        },
+        {
+          description: {
+            contains: search,
+            mode: "insensitive"
+          }
+        },
+        {
+          category: {
+            contains: search,
+            mode: "insensitive"
+          }
+        }
+      ]
+    }
+
+    console.log("📋 PRODUCT API: Where clause:", JSON.stringify(whereClause, null, 2))
+
     const products = await prisma.product.findMany({
-      where: {
-        visible: true,
-      },
+      where: whereClause,
       orderBy: {
         createdAt: "desc",
       },
+      take: limit,
     })
+
+    console.log(`✅ PRODUCT API: Found ${products.length} products`)
 
     return NextResponse.json(products)
   } catch (error) {
-    console.error("Error fetching products:", error)
+    console.error("❌ PRODUCT API: Error fetching products:", error)
     return NextResponse.json({ error: "Failed to fetch products" }, { status: 500 })
   }
 }
-

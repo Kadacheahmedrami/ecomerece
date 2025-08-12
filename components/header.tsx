@@ -2,7 +2,8 @@
 
 import Link from "next/link"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
-import { useSession, signIn, signOut } from "next-auth/react"
+import { signIn, signOut } from "next-auth/react"
+import type { Session } from "next-auth"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -40,16 +41,12 @@ type ExtendedUser = {
   isAdmin?: boolean;
 }
 
-// Define the type for route objects
-type Route = {
-  href: string;
-  label: string;
-  active: boolean;
+interface HeaderProps {
+  session?: Session | null
 }
 
-export default function Header() {
+export default function Header({ session }: HeaderProps) {
   const pathname = usePathname()
-  const { data: session } = useSession()
   const [showMobileSearch, setShowMobileSearch] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
   const router = useRouter()
@@ -91,12 +88,10 @@ export default function Header() {
     setShowMobileSearch(false)
   }
 
- 
-
   return (
     <header className={`sticky top-0 z-50 w-full border-b transition-shadow duration-300 ${isScrolled ? 'bg-background/80 backdrop-blur-md shadow-sm' : 'bg-background'}`}>
-      <div className="container flex h-16 mx-auto items-center">
-        <div className="flex items-center justify-between w-full">
+      <div className=" flex h-16 mx-auto items-center">
+        <div className="flex items-center  mx-4 justify-between w-full">
           {/* Left section */}
           <div className="flex items-center">
             <div className="flex md:hidden">
@@ -269,4 +264,3 @@ export default function Header() {
     </header>
   )
 }
-

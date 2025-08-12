@@ -1,12 +1,11 @@
 import { AdminProductForm } from "@/components/admin/admin-product-form"
-import { AdminShell } from "@/components/admin/admin-shell"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
 
 export default function NewProductPage() {
   return (
-    <AdminShell>
+    
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
@@ -23,7 +22,7 @@ export default function NewProductPage() {
         </div>
         <AdminProductForm />
       </div>
-    </AdminShell>
+  
   )
 }
 

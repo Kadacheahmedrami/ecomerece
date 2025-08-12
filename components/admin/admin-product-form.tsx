@@ -9,7 +9,6 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import type { Product } from "@prisma/client"
-import { createProductAction, updateProductAction } from "@/lib/actions"
 import { ImageUpload } from "@/components/admin/image-upload"
 import { toast } from "@/components/ui/use-toast"
 
@@ -45,8 +44,8 @@ export function AdminProductForm({ product }: AdminProductFormProps) {
     },
   })
 
-  // Fallback API submission function
-  const sendAPIRequest = async (values: FormValues) => {
+  // API submission function
+  const submitProductData = async (values: FormValues) => {
     try {
       console.log("🔍 API: Starting API submission");
       
@@ -54,30 +53,28 @@ export function AdminProductForm({ product }: AdminProductFormProps) {
       console.log("📋 API DATA:", JSON.stringify(values, null, 2));
       
       let response;
+      let endpoint;
+      let method;
       
       if (product) {
-        // Update existing product using PATCH
+        // Update existing product using PUT
+        endpoint = `/api/admin/products/${product.id}`;
+        method = 'PUT';
         console.log(`🔄 UPDATE: Updating product ${product.id} via API`);
-        
-        response = await fetch(`/api/products/${product.id}`, {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(values),
-        });
       } else {
-        // Create new product
+        // Create new product using POST
+        endpoint = '/api/admin/products';
+        method = 'POST';
         console.log("🔄 CREATE: Creating new product via API");
-        
-        response = await fetch('/api/products', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(values),
-        });
       }
+      
+      response = await fetch(endpoint, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(values),
+      });
       
       const result = await response.json();
       console.log("📥 API RESPONSE:", result);
@@ -88,10 +85,10 @@ export function AdminProductForm({ product }: AdminProductFormProps) {
       
       toast({
         title: "Success",
-        description: result.message || "Product saved successfully",
+        description: product ? "Product updated successfully" : "Product created successfully",
       });
       
-      // Manually refresh and redirect on success
+      // Refresh and redirect on success
       router.refresh();
       setTimeout(() => {
         router.push("/admin/products");
@@ -216,64 +213,8 @@ export function AdminProductForm({ product }: AdminProductFormProps) {
     console.log("📋 PROCESSED VALUES:", JSON.stringify(processedValues, null, 2));
 
     try {
-      // Try server action first
-      if (product) {
-        // Update existing product
-        console.log(`🔄 UPDATE: Attempting to update product ${product.id} via server action`);
-        try {
-          console.log("⏳ Calling updateProductAction...");
-          const result = await updateProductAction(product.id, processedValues);
-          console.log("✅ UPDATE SUCCESS: Update result received:", result);
-          
-          toast({
-            title: "Product updated",
-            description: "The product has been updated successfully.",
-          })
-          
-          // Manually refresh the page and redirect
-          console.log("🔄 Refreshing page and redirecting...");
-          router.refresh();
-          router.push("/admin/products");
-        } catch (serverActionError) {
-          console.error("❌ UPDATE SERVER ACTION FAILED:", serverActionError);
-          console.error("Error name:", serverActionError instanceof Error ? serverActionError.name : "Unknown");
-          console.error("Error message:", serverActionError instanceof Error ? serverActionError.message : String(serverActionError));
-          console.error("Error stack:", serverActionError instanceof Error ? serverActionError.stack : "No stack available");
-          
-          console.log("🔄 Attempting fallback API for update...");
-          await sendAPIRequest(processedValues);
-        }
-      } else {
-        // Create new product
-        console.log("🔄 CREATE: Attempting to create new product via server action");
-        try {
-          console.log("⏳ Calling createProductAction with values...");
-          const result = await createProductAction(processedValues);
-          console.log("✅ CREATE SUCCESS: Create result received:", result);
-          
-          toast({
-            title: "Product created",
-            description: "The product has been created successfully.",
-          })
-          
-          console.log("🔄 Refreshing page...");
-          router.refresh();
-          
-          console.log("⏳ Setting timeout for redirect...");
-          setTimeout(() => {
-            console.log("🔄 Redirecting to product list...");
-            router.push("/admin/products");
-          }, 1000);
-        } catch (serverActionError) {
-          console.error("❌ CREATE SERVER ACTION FAILED:", serverActionError);
-          console.error("Error name:", serverActionError instanceof Error ? serverActionError.name : "Unknown");
-          console.error("Error message:", serverActionError instanceof Error ? serverActionError.message : String(serverActionError));
-          console.error("Error stack:", serverActionError instanceof Error ? serverActionError.stack : "No stack available");
-          
-          console.log("🔄 Attempting fallback API for create...");
-          await sendAPIRequest(processedValues);
-        }
-      }
+      await submitProductData(processedValues);
+      console.log("✅ SUBMISSION SUCCESS: Product saved successfully");
     } catch (error) {
       console.error("❌ GLOBAL FORM ERROR:", error);
       
@@ -458,11 +399,8 @@ export function AdminProductForm({ product }: AdminProductFormProps) {
           <Button type="submit" className="w-full" disabled={isSubmitting}>
             {isSubmitting ? "Saving..." : product ? "Update Product" : "Create Product"}
           </Button>
-          
-      
         </div>
       </form>
     </Form>
   )
 }
-
