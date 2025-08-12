@@ -1,16 +1,5 @@
-'use client'
-
-import { useEffect, useState } from "react"
-import { useParams, useRouter } from "next/navigation"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { AdminOrderDetails } from "@/components/admin/admin-order-details"
-import { AdminOrderStatusUpdate } from "@/components/admin/admin-order-status-update"
-import { AdminOrderItems } from "@/components/admin/admin-order-items"
-import { AdminOrderCustomer } from "@/components/admin/admin-order-customer"
-import { AdminShell } from "@/components/admin/admin-shell"
-import { Button } from "@/components/ui/button"
-import { ArrowLeft, Loader2 } from "lucide-react"
-import Link from "next/link"
+import { notFound } from 'next/navigation'
+import { AdminOrderPageClient } from './admin-order-page-client'
 
 // Define OrderStatus enum to match your existing types
 type OrderStatus = 'PENDING' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED'
@@ -42,190 +31,63 @@ interface Order {
   deliveryFee: number
   total: number
   createdAt: string
-  updatedAt: string // Added missing updatedAt field
+  updatedAt: string
   product: Product
-  // Add any other order fields your components expect
 }
 
-export default function AdminOrderPage() {
-  const params = useParams()
-  const router = useRouter()
-  const [order, setOrder] = useState<Order | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+async function getOrder(id: string): Promise<Order | null> {
+  try {
+    // In a real app, you'd fetch from your database directly here
+    // For now, we'll make an internal API call or database query
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
+    const response = await fetch(`${baseUrl}/api/admin/orders/${id}`, {
+      cache: 'no-store', // Always fetch fresh data
+    })
+    
+    if (!response.ok) {
+      if (response.status === 404) {
+        return null
+      }
+      throw new Error('Failed to fetch order')
+    }
 
-  const id = params.id as string
-
-  useEffect(() => {
-    async function fetchOrder() {
-      try {
-        setLoading(true)
-        const response = await fetch(`/api/admin/orders/${id}`)
-        
-        if (!response.ok) {
-          if (response.status === 404) {
-            router.push('/404')
-            return
-          }
-          throw new Error('Failed to fetch order')
-        }
-
-        const orderData = await response.json()
-        
-        // Ensure the order data has the required fields with proper types
-        const processedOrder: Order = {
-          ...orderData,
-          updatedAt: orderData.updatedAt || orderData.createdAt, // Fallback if updatedAt is missing
-          product: {
-            ...orderData.product,
-            // Provide defaults for missing product fields if needed
-            description: orderData.product.description || '',
-            images: orderData.product.images || [],
-            category: orderData.product.category || '',
-            stock: orderData.product.stock || 0,
-            visible: orderData.product.visible !== undefined ? orderData.product.visible : true,
-            createdAt: orderData.product.createdAt ? new Date(orderData.product.createdAt) : new Date(),
-            updatedAt: orderData.product.updatedAt ? new Date(orderData.product.updatedAt) : new Date(),
-          }
-        }
-        
-        setOrder(processedOrder)
-      } catch (err) {
-        console.error('Error fetching order:', err)
-        setError('Failed to load order')
-      } finally {
-        setLoading(false)
+    const orderData = await response.json()
+    
+    // Process the order data with proper types and defaults
+    const processedOrder: Order = {
+      ...orderData,
+      updatedAt: orderData.updatedAt || orderData.createdAt,
+      product: {
+        ...orderData.product,
+        description: orderData.product.description || '',
+        images: orderData.product.images || [],
+        category: orderData.product.category || '',
+        stock: orderData.product.stock || 0,
+        visible: orderData.product.visible !== undefined ? orderData.product.visible : true,
+        createdAt: orderData.product.createdAt ? new Date(orderData.product.createdAt) : new Date(),
+        updatedAt: orderData.product.updatedAt ? new Date(orderData.product.updatedAt) : new Date(),
       }
     }
+    
+    return processedOrder
+  } catch (error) {
+    console.error('Error fetching order:', error)
+    return null
+  }
+}
 
-    if (id) {
-      fetchOrder()
-    }
-  }, [id, router])
+interface AdminOrderPageProps {
+  params: {
+    id: string
+  }
+}
 
-  // Function to refresh order data after updates
-  const refreshOrder = async () => {
-    try {
-      const response = await fetch(`/api/admin/orders/${id}`)
-      if (response.ok) {
-        const orderData = await response.json()
-        
-        // Process the refreshed order data the same way
-        const processedOrder: Order = {
-          ...orderData,
-          updatedAt: orderData.updatedAt || orderData.createdAt,
-          product: {
-            ...orderData.product,
-            description: orderData.product.description || '',
-            images: orderData.product.images || [],
-            category: orderData.product.category || '',
-            stock: orderData.product.stock || 0,
-            visible: orderData.product.visible !== undefined ? orderData.product.visible : true,
-            createdAt: orderData.product.createdAt ? new Date(orderData.product.createdAt) : new Date(),
-            updatedAt: orderData.product.updatedAt ? new Date(orderData.product.updatedAt) : new Date(),
-          }
-        }
-        
-        setOrder(processedOrder)
-      }
-    } catch (err) {
-      console.error('Error refreshing order:', err)
-    }
+export default async function AdminOrderPage({ params }: AdminOrderPageProps) {
+  const order = await getOrder(params.id)
+
+  if (!order) {
+    notFound()
   }
 
-  if (loading) {
-    return (
-      <AdminShell>
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="flex items-center gap-2">
-            <Loader2 className="h-6 w-6 animate-spin" />
-            <span>Loading order...</span>
-          </div>
-        </div>
-      </AdminShell>
-    )
-  }
-
-  if (error || !order) {
-    return (
-      <AdminShell>
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="text-center">
-            <p className="text-red-500 mb-4">{error || 'Order not found'}</p>
-            <Button variant="outline" asChild>
-              <Link href="/admin/orders">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Orders
-              </Link>
-            </Button>
-          </div>
-        </div>
-      </AdminShell>
-    )
-  }
-
-  return (
-    <AdminShell>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="icon" asChild className="h-8 w-8">
-                <Link href="/admin/orders">
-                  <ArrowLeft className="h-4 w-4" />
-                </Link>
-              </Button>
-              <h1 className="text-3xl font-bold tracking-tight">
-                Order #{order.id.slice(-6)}
-              </h1>
-            </div>
-            <p className="text-muted-foreground mt-1">
-              Placed on {new Date(order.createdAt).toLocaleDateString()}
-            </p>
-          </div>
-        </div>
-
-        <div className="grid gap-6 md:grid-cols-2">
-          <Card>
-            <CardHeader>
-              <CardTitle>Order Details</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <AdminOrderDetails order={order} />
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Customer Information</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <AdminOrderCustomer order={order} />
-            </CardContent>
-          </Card>
-        </div>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Order Items</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <AdminOrderItems order={order} />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Update Status</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <AdminOrderStatusUpdate 
-              order={order} 
-              onOrderUpdate={refreshOrder}
-            />
-          </CardContent>
-        </Card>
-      </div>
-    </AdminShell>
-  )
+  return <AdminOrderPageClient initialOrder={order} orderId={params.id} />
 }
