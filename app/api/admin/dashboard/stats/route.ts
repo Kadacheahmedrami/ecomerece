@@ -1,16 +1,69 @@
 // app/api/admin/dashboard/stats/route.ts
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { Prisma } from '@prisma/client'
+
+// Helper function to safely execute database operations
+async function safeDbOperation<T>(
+  operation: () => Promise<T>,
+  fallback: T,
+  operationName: string
+): Promise<T> {
+  try {
+    return await operation()
+  } catch (error) {
+    console.error(`${operationName} failed:`, error)
+    return fallback
+  }
+}
+
+// Helper function to test database connectivity
+async function testDatabaseConnection(): Promise<boolean> {
+  try {
+    await prisma.$queryRaw`SELECT 1`
+    return true
+  } catch (error) {
+    console.error('Database connectivity test failed:', error)
+    return false
+  }
+}
 
 export async function GET() {
   try {
+    // First, test database connectivity
+    const isConnected = await testDatabaseConnection()
+    
+    if (!isConnected) {
+      return NextResponse.json(
+        { 
+          error: 'Database connection failed',
+          message: 'Unable to connect to the database. Please check your connection settings.',
+          fallback: {
+            totalRevenue: 0,
+            orderCount: 0,
+            stockCount: 0,
+            customerCount: 0,
+            pendingOrders: 0,
+            outOfStock: 0,
+            processingOrders: 0,
+            revenueChange: 0,
+            orderChange: 0,
+            productChange: 0,
+            customerChange: 0,
+            monthlyData: []
+          }
+        },
+        { status: 503 } // Service Unavailable
+      )
+    }
+
     // Get current date for calculations
     const now = new Date()
     const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
     const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1)
     const lastWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
 
-    // Get all stats in parallel
+    // Execute all database operations with error handling
     const [
       totalRevenue,
       lastMonthRevenue,
@@ -24,7 +77,7 @@ export async function GET() {
       customerCount,
       lastWeekCustomers,
       monthlyRevenueData
-    ] = await Promise.all([
+    ] = await Promise.allSettled([
       // Total revenue
       prisma.order.aggregate({
         _sum: { total: true },
@@ -69,7 +122,7 @@ export async function GET() {
       }),
       // Total products
       prisma.product.count(),
-      // Last month products for comparison (assuming you track product creation dates)
+      // Last month products for comparison
       prisma.product.count({
         where: {
           createdAt: {
@@ -97,13 +150,18 @@ export async function GET() {
           status: { not: 'CANCELLED' }
         }
       }),
-      // Monthly revenue data for the chart (last 8 months) - PostgreSQL syntax
-      prisma.$queryRaw`
+      // Monthly revenue data for the chart (last 8 months)
+      prisma.$queryRaw<Array<{
+        month: string;
+        revenue: number;
+        year: number;
+        monthNum: number;
+      }>>`
         SELECT 
           TO_CHAR("createdAt", 'Mon') as month,
-          SUM(total) as revenue,
-          EXTRACT(YEAR FROM "createdAt") as year,
-          EXTRACT(MONTH FROM "createdAt") as "monthNum"
+          COALESCE(SUM(total), 0)::numeric as revenue,
+          EXTRACT(YEAR FROM "createdAt")::integer as year,
+          EXTRACT(MONTH FROM "createdAt")::integer as "monthNum"
         FROM "Order" 
         WHERE "createdAt" >= NOW() - INTERVAL '8 months'
           AND status != 'CANCELLED'
@@ -112,19 +170,43 @@ export async function GET() {
       `
     ])
 
+    // Helper function to extract value from PromiseSettledResult
+    function extractValue<T>(result: PromiseSettledResult<T>, fallback: T): T {
+      if (result.status === 'fulfilled') {
+        return result.value
+      } else {
+        console.error('Operation failed:', result.reason)
+        return fallback
+      }
+    }
+
+    // Extract values with fallbacks
+    const totalRevenueResult = extractValue(totalRevenue, { _sum: { total: null } })
+    const lastMonthRevenueResult = extractValue(lastMonthRevenue, { _sum: { total: null } })
+    const orderCountResult = extractValue(orderCount, 0)
+    const lastMonthOrdersResult = extractValue(lastMonthOrders, 0)
+    const pendingOrdersResult = extractValue(pendingOrders, 0)
+    const processingOrdersResult = extractValue(processingOrders, 0)
+    const stockCountResult = extractValue(stockCount, 0)
+    const lastMonthProductsResult = extractValue(lastMonthProducts, 0)
+    const outOfStockResult = extractValue(outOfStock, 0)
+    const customerCountResult = extractValue(customerCount, [])
+    const lastWeekCustomersResult = extractValue(lastWeekCustomers, [])
+    const monthlyRevenueDataResult = extractValue(monthlyRevenueData, [])
+
     // Calculate percentage changes
-    const currentRevenue = parseFloat(totalRevenue._sum.total?.toString() || '0')
-    const previousRevenue = parseFloat(lastMonthRevenue._sum.total?.toString() || '0')
+    const currentRevenue = parseFloat(totalRevenueResult._sum.total?.toString() || '0')
+    const previousRevenue = parseFloat(lastMonthRevenueResult._sum.total?.toString() || '0')
     const revenueChange = previousRevenue > 0 ? ((currentRevenue - previousRevenue) / previousRevenue * 100) : 0
 
-    const orderChange = lastMonthOrders > 0 ? ((orderCount - lastMonthOrders) / lastMonthOrders * 100) : 0
+    const orderChange = lastMonthOrdersResult > 0 ? ((orderCountResult - lastMonthOrdersResult) / lastMonthOrdersResult * 100) : 0
     
-    const productChange = lastMonthProducts > 0 ? ((stockCount - (stockCount - lastMonthProducts)) / (stockCount - lastMonthProducts) * 100) : 7.2
+    const productChange = lastMonthProductsResult > 0 ? ((stockCountResult - (stockCountResult - lastMonthProductsResult)) / (stockCountResult - lastMonthProductsResult) * 100) : 7.2
 
-    const customerChange = lastWeekCustomers.length > 0 ? ((customerCount.length - lastWeekCustomers.length) / lastWeekCustomers.length * 100) : 1.2
+    const customerChange = lastWeekCustomersResult.length > 0 ? ((customerCountResult.length - lastWeekCustomersResult.length) / lastWeekCustomersResult.length * 100) : 1.2
 
     // Transform monthly data for the chart
-    const chartData = (monthlyRevenueData as any[]).map(item => ({
+    const chartData = monthlyRevenueDataResult.map(item => ({
       month: item.month,
       revenue: parseFloat(item.revenue?.toString() || '0')
     }))
@@ -147,16 +229,16 @@ export async function GET() {
     const response = {
       // Main stats for the cards
       totalRevenue: currentRevenue,
-      orderCount,
-      stockCount,
-      customerCount: customerCount.length,
-      pendingOrders,
-      outOfStock,
+      orderCount: orderCountResult,
+      stockCount: stockCountResult,
+      customerCount: customerCountResult.length,
+      pendingOrders: pendingOrdersResult,
+      outOfStock: outOfStockResult,
       
       // Additional stats the dashboard might need
-      processingOrders,
-      totalOrders: orderCount,
-      totalProducts: stockCount,
+      processingOrders: processingOrdersResult,
+      totalOrders: orderCountResult,
+      totalProducts: stockCountResult,
       revenue: currentRevenue,
       
       // Percentage changes for the trend indicators
@@ -166,14 +248,65 @@ export async function GET() {
       customerChange: Math.round(customerChange * 10) / 10,
       
       // Chart data
-      monthlyData
+      monthlyData,
+      
+      // Status indicators
+      status: 'success',
+      timestamp: new Date().toISOString()
     }
 
     return NextResponse.json(response)
+    
   } catch (error) {
     console.error('Dashboard stats error:', error)
+    
+    // Check if it's a Prisma connection error
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === 'P1001') {
+        return NextResponse.json(
+          {
+            error: 'Database connection failed',
+            message: 'Cannot reach database server. Please check if the database is running and accessible.',
+            code: error.code,
+            fallback: {
+              totalRevenue: 0,
+              orderCount: 0,
+              stockCount: 0,
+              customerCount: 0,
+              pendingOrders: 0,
+              outOfStock: 0,
+              processingOrders: 0,
+              revenueChange: 0,
+              orderChange: 0,
+              productChange: 0,
+              customerChange: 0,
+              monthlyData: []
+            }
+          },
+          { status: 503 }
+        )
+      }
+    }
+
     return NextResponse.json(
-      { error: 'Failed to fetch dashboard stats' },
+      { 
+        error: 'Failed to fetch dashboard stats',
+        message: error instanceof Error ? error.message : 'Unknown error occurred',
+        fallback: {
+          totalRevenue: 0,
+          orderCount: 0,
+          stockCount: 0,
+          customerCount: 0,
+          pendingOrders: 0,
+          outOfStock: 0,
+          processingOrders: 0,
+          revenueChange: 0,
+          orderChange: 0,
+          productChange: 0,
+          customerChange: 0,
+          monthlyData: []
+        }
+      },
       { status: 500 }
     )
   }
