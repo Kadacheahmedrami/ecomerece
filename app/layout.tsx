@@ -16,35 +16,51 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: {
-    default: "ModernShop - Modern E-Commerce Platform",
-    template: "%s | ModernShop"
+    default: "Shop ElBhja - Algerian Store for Signs & More",
+    template: "%s | Shop ElBhja"
   },
-  description: "A modern, fast, and secure e-commerce platform built with Next.js, featuring seamless shopping experiences and powerful admin tools.",
-  keywords: ["e-commerce", "online shopping", "modern", "next.js", "react"],
-  authors: [{ name: "ModernShop Team" }],
-  creator: "ModernShop",
-  publisher: "ModernShop",
+  description:
+    "Shop ElBhja is Algeria’s trusted store for high-quality signs, custom shop boards, LED displays, and more. We deliver premium advertising products that make your business stand out.",
+  keywords: [
+    "Shop ElBhja",
+    "signs Algeria",
+    "shop boards Algeria",
+    "store signs",
+    "custom signs",
+    "advertising boards",
+    "LED displays",
+    "shop decorations",
+    "Algeria business signs",
+    "لافتات محلات الجزائر",
+    "إعلانات المحلات",
+    "تصاميم لافتات"
+  ],
+  authors: [{ name: "Shop ElBhja Team" }],
+  creator: "Shop ElBhja",
+  publisher: "Shop ElBhja",
   metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'),
   openGraph: {
     type: "website",
-    locale: "en_US",
+    locale: "ar_DZ",
     url: "/",
-    siteName: "ModernShop",
-    title: "ModernShop - Modern E-Commerce Platform",
-    description: "Discover amazing products with our modern e-commerce platform",
+    siteName: "Shop ElBhja",
+    title: "Shop ElBhja - Algerian Store for Signs & More",
+    description:
+      "Discover Shop ElBhja – Algeria’s go-to store for custom signs, advertising boards, LED displays, and more to make your shop stand out.",
     images: [
       {
-        url: "/og-image.png",
+        url: "/logo.png",
         width: 1200,
         height: 630,
-        alt: "ModernShop - Modern E-Commerce Platform"
+        alt: "Shop ElBhja - Algerian Store for Signs & More"
       }
     ]
   },
   twitter: {
     card: "summary_large_image",
-    title: "ModernShop - Modern E-Commerce Platform",
-    description: "Discover amazing products with our modern e-commerce platform",
+    title: "Shop ElBhja - Algerian Store for Signs & More",
+    description:
+      "Your source for custom signs, shop boards, LED displays, and advertising products in Algeria.",
     images: ["/og-image.png"]
   },
   robots: {
@@ -59,9 +75,10 @@ export const metadata: Metadata = {
     }
   },
   verification: {
-    google: process.env.GOOGLE_VERIFICATION_ID,
+    google: process.env.GOOGLE_VERIFICATION_ID
   }
 }
+
 
 export const viewport = {
   width: 'device-width',
@@ -81,7 +98,6 @@ interface RootLayoutProps {
 export default async function RootLayout({ children }: RootLayoutProps) {
   const session = await getServerSession()
   const isadmin = await checkAdminAccess()
-  console.log(session)
   return (
     <html lang="en" suppressHydrationWarning className={inter.variable}>
       <body className={`${inter.className} antialiased`}>
