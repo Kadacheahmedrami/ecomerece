@@ -6,7 +6,6 @@ import { AdminOrderDetails } from "@/components/admin/admin-order-details"
 import { AdminOrderStatusUpdate } from "@/components/admin/admin-order-status-update"
 import { AdminOrderItems } from "@/components/admin/admin-order-items"
 import { AdminOrderCustomer } from "@/components/admin/admin-order-customer"
-import { AdminShell } from "@/components/admin/admin-shell"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
@@ -84,7 +83,7 @@ export function AdminOrderPageClient({ initialOrder, orderId }: AdminOrderPageCl
   }
 
   return (
-    <AdminShell>
+
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
@@ -145,6 +144,6 @@ export function AdminOrderPageClient({ initialOrder, orderId }: AdminOrderPageCl
           </CardContent>
         </Card>
       </div>
-    </AdminShell>
+  
   )
 }

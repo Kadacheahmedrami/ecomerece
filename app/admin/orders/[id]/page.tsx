@@ -35,6 +35,12 @@ interface Order {
   product: Product
 }
 
+// Helper function to ensure numeric values
+function ensureNumber(value: any, defaultValue: number = 0): number {
+  const num = typeof value === 'string' ? parseFloat(value) : Number(value)
+  return isNaN(num) ? defaultValue : num
+}
+
 async function getOrder(id: string): Promise<Order | null> {
   try {
     // In a real app, you'd fetch from your database directly here
@@ -56,16 +62,23 @@ async function getOrder(id: string): Promise<Order | null> {
     // Process the order data with proper types and defaults
     const processedOrder: Order = {
       ...orderData,
+      // Ensure all numeric fields are properly converted and have defaults
+      quantity: ensureNumber(orderData.quantity, 1),
+      productPrice: ensureNumber(orderData.productPrice, 0),
+      subtotal: ensureNumber(orderData.subtotal, 0),
+      deliveryFee: ensureNumber(orderData.deliveryFee, 0),
+      total: ensureNumber(orderData.total, 0),
       updatedAt: orderData.updatedAt || orderData.createdAt,
       product: {
         ...orderData.product,
-        description: orderData.product.description || '',
-        images: orderData.product.images || [],
-        category: orderData.product.category || '',
-        stock: orderData.product.stock || 0,
-        visible: orderData.product.visible !== undefined ? orderData.product.visible : true,
-        createdAt: orderData.product.createdAt ? new Date(orderData.product.createdAt) : new Date(),
-        updatedAt: orderData.product.updatedAt ? new Date(orderData.product.updatedAt) : new Date(),
+        price: ensureNumber(orderData.product?.price, 0),
+        stock: ensureNumber(orderData.product?.stock, 0),
+        description: orderData.product?.description || '',
+        images: orderData.product?.images || [],
+        category: orderData.product?.category || '',
+        visible: orderData.product?.visible !== undefined ? orderData.product.visible : true,
+        createdAt: orderData.product?.createdAt ? new Date(orderData.product.createdAt) : new Date(),
+        updatedAt: orderData.product?.updatedAt ? new Date(orderData.product.updatedAt) : new Date(),
       }
     }
     
@@ -77,17 +90,18 @@ async function getOrder(id: string): Promise<Order | null> {
 }
 
 interface AdminOrderPageProps {
-  params: {
+  params: Promise<{
     id: string
-  }
+  }>
 }
 
 export default async function AdminOrderPage({ params }: AdminOrderPageProps) {
-  const order = await getOrder(params.id)
+  const { id } = await params
+  const order = await getOrder(id)
 
   if (!order) {
     notFound()
   }
 
-  return <AdminOrderPageClient initialOrder={order} orderId={params.id} />
+  return <AdminOrderPageClient initialOrder={order} orderId={id} />
 }
