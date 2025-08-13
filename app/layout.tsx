@@ -39,12 +39,15 @@ export const metadata: Metadata = {
   creator: "Shop ElBhja",
   publisher: "Shop ElBhja",
   metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'),
+  icons: {
+    icon: "/logo.ico" // <-- Use your logo instead of favicon
+  },
   openGraph: {
     type: "website",
     locale: "ar_DZ",
     url: "/",
     siteName: "Shop ElBhja",
-    title: "Shop ElBhja - Algerian Store for Signs & More",
+    title: "ElBhja",
     description:
       "Discover Shop ElBhja – Algeria’s go-to store for custom signs, advertising boards, LED displays, and more to make your shop stand out.",
     images: [
@@ -78,6 +81,7 @@ export const metadata: Metadata = {
     google: process.env.GOOGLE_VERIFICATION_ID
   }
 }
+
 
 
 export const viewport = {
