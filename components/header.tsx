@@ -163,7 +163,7 @@ export default function Header({ session, isadmin }: HeaderProps) {
                         </div>
                         <div className="space-y-1 mb-2">
                           <DropdownMenuItem asChild className="rounded-lg">
-                            <Link href="/admin/dashboard" className="flex items-center py-2">
+                            <Link href="/admin" className="flex items-center py-2">
                               <div className="h-8 w-8 rounded-md bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mr-3">
                                 <LayoutDashboard className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                               </div>
