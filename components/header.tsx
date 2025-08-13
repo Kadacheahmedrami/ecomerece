@@ -75,8 +75,8 @@ export default function Header({ session, isadmin }: HeaderProps) {
         <div className="flex items-center mx-4 justify-between w-full">
           {/* Left section */}
           <div className="flex items-center">
-            <Link href="/" className="flex items-center  group">
-              <div className="  transition-transform group-hover:scale-105">
+            <div  className=" flex items-center  group">
+              <Link href="/"  className="  relative right-14  transition-transform group-hover:scale-105">
                 <Image 
                   src="/logo.svg" 
                   alt="Shop ELBHJA Logo" 
@@ -84,13 +84,13 @@ export default function Header({ session, isadmin }: HeaderProps) {
                   height={160}
                 
                 />
-              </div>
-              <div className="flex relative right-10 flex-col">
-                <span className="text-3xl italic font-black tracking-tight bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent hover:from-primary/80 hover:to-primary transition-all duration-300">
+              </Link>
+              <Link  href="/" className="flex relative right-24 flex-col">
+                <span className="text-xl md:text-3xl italic font-black tracking-tight bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent hover:from-primary/80 hover:to-primary transition-all duration-300">
                   Shop ELBHJA
                 </span>
-              </div>
-            </Link>
+              </Link>
+            </div>
           </div>
 
           {/* Right section */}

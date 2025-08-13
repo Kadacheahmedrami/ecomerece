@@ -4,17 +4,24 @@ import { AdminOrderFilters } from "@/components/admin/admin-order-filters"
 import { OrderStatus } from "@prisma/client"
 
 interface AdminOrdersPageProps {
-  searchParams: {
+  searchParams: Promise<{
     status?: string
     page?: string
     limit?: string
     search?: string
     startDate?: string
     endDate?: string
-  }
+  }>
 }
 
-async function getOrders(searchParams: AdminOrdersPageProps['searchParams']) {
+async function getOrders(searchParams: {
+  status?: string
+  page?: string
+  limit?: string
+  search?: string
+  startDate?: string
+  endDate?: string
+}) {
   const params = new URLSearchParams()
   
   if (searchParams.status) params.set('status', searchParams.status)
@@ -38,29 +45,30 @@ async function getOrders(searchParams: AdminOrdersPageProps['searchParams']) {
 export default async function AdminOrdersPage({
   searchParams,
 }: AdminOrdersPageProps) {
+  // Await the searchParams Promise
+  const resolvedSearchParams = await searchParams
+  
   // Type-safe way to handle the status parameter
   let statusFilter: OrderStatus | undefined = undefined;
-  if (searchParams.status && Object.values(OrderStatus).includes(searchParams.status as OrderStatus)) {
-    statusFilter = searchParams.status as OrderStatus;
+  if (resolvedSearchParams.status && Object.values(OrderStatus).includes(resolvedSearchParams.status as OrderStatus)) {
+    statusFilter = resolvedSearchParams.status as OrderStatus;
   }
 
   const data = await getOrders({
-    ...searchParams,
+    ...resolvedSearchParams,
     status: statusFilter
   })
 
   return (
- 
-      <div className="container py-10">
-        <h1 className="text-3xl font-bold mb-6">Orders</h1>
-        <AdminOrderFilters />
-        <div className="mt-6">
-          <AdminOrdersTable 
-            orders={data.orders} 
-            pagination={data.pagination}
-          />
-        </div>
+    <div className="container py-10">
+      <h1 className="text-3xl font-bold mb-6">Orders</h1>
+      <AdminOrderFilters />
+      <div className="mt-6">
+        <AdminOrdersTable 
+          orders={data.orders} 
+          pagination={data.pagination}
+        />
       </div>
-   
+    </div>
   )
 }

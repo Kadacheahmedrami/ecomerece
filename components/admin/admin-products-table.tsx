@@ -256,7 +256,7 @@ export function AdminProductsTable({ products, pagination }: AdminProductsTableP
                 <TableCell>
                   <Badge variant="outline">{product.category}</Badge>
                 </TableCell>
-                <TableCell className="font-mono">${product.price.toFixed(2)}</TableCell>
+                <TableCell className="font-mono">{product.price.toFixed(2)} DA</TableCell>
                 <TableCell>
                   <Badge variant={product.stock > 0 ? "default" : "destructive"}>
                     {product.stock}

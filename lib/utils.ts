@@ -14,9 +14,13 @@ export function formatDate(date: Date): string {
 }
 
 export function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat("en-US", {
+  const formatted = new Intl.NumberFormat("en-US", {
     style: "currency",
-    currency: "USD",
+    currency: "DZD",
+    currencyDisplay: "code"
   }).format(amount)
+  
+  // Remove DZD and add DA at the end
+  const numberOnly = formatted.replace("DZD", "").trim()
+  return numberOnly + " DA"
 }
-

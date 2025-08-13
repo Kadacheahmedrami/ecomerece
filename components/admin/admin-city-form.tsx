@@ -108,13 +108,13 @@ export default function AdminCityForm({ onCityAdded }: AdminCityFormProps) {
                 <FormLabel>Delivery Fee</FormLabel>
                 <FormControl>
                   <div className="relative">
-                    <span className="absolute inset-y-0 left-0 flex items-center pl-3">$</span>
+                    <span className="absolute inset-y-0 left-0 flex items-center pl-3">DA</span>
                     <Input 
                       type="number" 
                       step="0.01" 
                       min="0" 
                       placeholder="0.00" 
-                      className="pl-7"
+                      className="pl-10"
                       {...field} 
                     />
                   </div>
