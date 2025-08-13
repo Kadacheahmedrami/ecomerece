@@ -293,9 +293,9 @@ export default function Header({ session, isadmin }: HeaderProps) {
                             <nav className="space-y-1">
                               <SheetClose asChild>
                                 <Link 
-                                  href="/admin/dashboard"
+                                  href="/admin"
                                   className={`flex items-center text-sm font-medium rounded-xl py-3 px-3 transition-all duration-200 hover:bg-primary/10 hover:text-primary group ${
-                                    pathname === '/admin/dashboard' ? 'bg-primary/10 text-primary' : 'text-foreground/70'
+                                    pathname === '/admin' ? 'bg-primary/10 text-primary' : 'text-foreground/70'
                                   }`}
                                 >
                                   <div className="h-8 w-8 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mr-3 group-hover:bg-blue-200 dark:group-hover:bg-blue-900/50 transition-colors">
