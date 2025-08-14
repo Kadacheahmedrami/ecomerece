@@ -1,15 +1,18 @@
 // app/api/admin/cities/[id]/route.ts
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { checkAdminAccess } from '@/lib/auth'
 
 interface Params {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }
 
 export async function GET(request: Request, { params }: Params) {
   try {
+    const { id } = await params
+    
     const city = await prisma.city.findUnique({
-      where: { id: params.id }
+      where: { id }
     })
 
     if (!city) {
@@ -29,51 +32,100 @@ export async function GET(request: Request, { params }: Params) {
   }
 }
 
-export async function PUT(request: Request, { params }: Params) {
+export async function PATCH(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    const { name, deliveryFee } = await request.json()
-
-    const city = await prisma.city.update({
-      where: { id: params.id },
+    const isAdmin = await checkAdminAccess()
+    
+    if (!isAdmin) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      )
+    }
+    
+    const { id } = await params
+    const data = await req.json()
+    
+    // Validate the data
+    if (data.deliveryFee !== undefined && typeof data.deliveryFee !== 'number') {
+      return NextResponse.json(
+        { error: "Delivery fee must be a number" },
+        { status: 400 }
+      )
+    }
+    
+    // Check if the city exists
+    const existingCity = await prisma.city.findUnique({
+      where: { id }
+    })
+    
+    if (!existingCity) {
+      return NextResponse.json(
+        { error: "City not found" },
+        { status: 404 }
+      )
+    }
+    
+    // Update the city
+    const updatedCity = await prisma.city.update({
+      where: { id },
       data: {
-        name,
-        deliveryFee: parseFloat(deliveryFee)
+        name: data.name !== undefined ? data.name : undefined,
+        deliveryFee: data.deliveryFee !== undefined ? data.deliveryFee : undefined
       }
     })
-
-    return NextResponse.json(city)
+    
+    return NextResponse.json(updatedCity)
   } catch (error) {
-    console.error('City update error:', error)
     return NextResponse.json(
-      { error: 'Failed to update city' },
+      { error: "Failed to update city" },
       { status: 500 }
     )
   }
 }
 
-export async function DELETE(request: Request, { params }: Params) {
+export async function DELETE(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    // Check if city is used in orders
-    const orderCount = await prisma.order.count({
-      where: { city: params.id }
-    })
-
-    if (orderCount > 0) {
+    const isAdmin = await checkAdminAccess()
+    
+    if (!isAdmin) {
       return NextResponse.json(
-        { error: 'Cannot delete city with existing orders' },
-        { status: 400 }
+        { error: "Unauthorized" },
+        { status: 401 }
       )
     }
-
-    await prisma.city.delete({
-      where: { id: params.id }
+    
+    const { id } = await params
+    
+    // Check if the city exists
+    const city = await prisma.city.findUnique({
+      where: { id }
     })
-
-    return NextResponse.json({ success: true })
-  } catch (error) {
-    console.error('City deletion error:', error)
+    
+    if (!city) {
+      return NextResponse.json(
+        { error: "City not found" },
+        { status: 404 }
+      )
+    }
+    
+    // Delete the city
+    await prisma.city.delete({
+      where: { id }
+    })
+    
     return NextResponse.json(
-      { error: 'Failed to delete city' },
+      { success: true, message: "City deleted successfully" }
+    )
+  } catch (error) {
+    return NextResponse.json(
+      { error: "Failed to delete city" },
       { status: 500 }
     )
   }

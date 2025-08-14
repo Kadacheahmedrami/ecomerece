@@ -59,7 +59,7 @@ export default function AdminCitiesTable({
 
   const handleDelete = async (id: string) => {
     try {
-      const response = await fetch(`/api/cities/${id}`, {
+      const response = await fetch(`/api/admin/cities/${id}`, {
         method: 'DELETE'
       })
 
@@ -97,7 +97,7 @@ export default function AdminCitiesTable({
     if (!editingCity) return
 
     try {
-      const response = await fetch(`/api/cities/${editingCity}`, {
+      const response = await fetch(`/api/admin/cities/${editingCity}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json'

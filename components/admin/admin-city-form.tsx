@@ -43,7 +43,7 @@ export default function AdminCityForm({ onCityAdded }: AdminCityFormProps) {
   const onSubmit = async (data: FormValues) => {
     setIsSubmitting(true)
     try {
-      const response = await fetch("/api/cities", {
+      const response = await fetch("/api/admin/cities", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -1,6 +1,7 @@
 // app/api/admin/cities/route.ts
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { checkAdminAccess } from '@/lib/auth'
 
 export async function GET() {
   try {
@@ -18,23 +19,38 @@ export async function GET() {
   }
 }
 
-export async function POST(request: Request) {
+export async function POST(req: Request) {
   try {
-    const { name, deliveryFee } = await request.json()
-
+    const isAdmin = await checkAdminAccess()
+    
+    if (!isAdmin) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      )
+    }
+    
+    const { name, deliveryFee } = await req.json()
+    
+    if (!name || typeof deliveryFee !== 'number') {
+      return NextResponse.json(
+        { error: "Name and delivery fee are required" },
+        { status: 400 }
+      )
+    }
+    
     const city = await prisma.city.create({
       data: {
         name,
-        deliveryFee: parseFloat(deliveryFee)
+        deliveryFee
       }
     })
-
-    return NextResponse.json(city, { status: 201 })
+    
+    return NextResponse.json(city)
   } catch (error) {
-    console.error('City creation error:', error)
     return NextResponse.json(
-      { error: 'Failed to create city' },
+      { error: "Failed to create city" },
       { status: 500 }
     )
   }
-}
+} 
