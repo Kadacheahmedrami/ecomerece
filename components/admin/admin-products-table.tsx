@@ -27,7 +27,7 @@ import { Edit, MoreHorizontal, Trash, Eye, EyeOff, ChevronLeft, ChevronRight } f
 import Image from "next/image"
 import Link from "next/link"
 import { useToast } from "@/components/ui/use-toast"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useSearchParams } from "next/navigation"
 
 interface ProductWithCount extends Product {
   _count?: {
@@ -45,14 +45,14 @@ interface PaginationData {
 interface AdminProductsTableProps {
   products: ProductWithCount[]
   pagination: PaginationData
+  onRefresh?: () => void
 }
 
-export function AdminProductsTable({ products, pagination }: AdminProductsTableProps) {
+export function AdminProductsTable({ products, pagination, onRefresh }: AdminProductsTableProps) {
   const [isDeleting, setIsDeleting] = useState(false)
   const [isUpdatingVisibility, setIsUpdatingVisibility] = useState<string | null>(null)
   const [productToDelete, setProductToDelete] = useState<ProductWithCount | null>(null)
   const { toast } = useToast()
-  const router = useRouter()
   const searchParams = useSearchParams()
 
   const handleDelete = async () => {
@@ -77,7 +77,8 @@ export function AdminProductsTable({ products, pagination }: AdminProductsTableP
         description: result.message || "The product has been deleted successfully.",
       })
       
-      router.refresh()
+      // Use onRefresh instead of router.refresh()
+      onRefresh?.()
     } catch (error) {
       console.error("Error deleting product:", error)
       toast({
@@ -117,7 +118,8 @@ export function AdminProductsTable({ products, pagination }: AdminProductsTableP
         description: `Product is now ${!currentVisibility ? 'visible' : 'hidden'}.`,
       })
       
-      router.refresh()
+      // Use onRefresh instead of router.refresh()
+      onRefresh?.()
     } catch (error) {
       console.error("Error updating product visibility:", error)
       toast({
