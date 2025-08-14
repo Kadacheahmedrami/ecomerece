@@ -7,7 +7,7 @@ import { Toaster } from "@/components/ui/toaster"
 import Header from "@/components/header"
 import { getServerSession } from "next-auth/next"
 import { checkAdminAccess } from "@/lib/auth"
-
+import { CartProvider } from "@/contexts/cart-context"
 const inter = Inter({ 
   subsets: ["latin"],
   display: 'swap',
@@ -105,6 +105,7 @@ export default async function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="en" suppressHydrationWarning className={inter.variable}>
       <body className={`${inter.className} antialiased`}>
+
         <ThemeProvider 
           attribute="class" 
           defaultTheme="system" 
@@ -112,6 +113,7 @@ export default async function RootLayout({ children }: RootLayoutProps) {
           disableTransitionOnChange
           storageKey="modernshop-theme"
         >
+            <CartProvider>
           <div className="relative flex min-h-screen flex-col">
             <Header session={session} isadmin={isadmin} />
             <main className="flex-1 relative">
@@ -120,6 +122,7 @@ export default async function RootLayout({ children }: RootLayoutProps) {
        
           </div>
           <Toaster />
+          </CartProvider>
         </ThemeProvider>
       </body>
     </html>

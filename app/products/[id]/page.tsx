@@ -1,4 +1,4 @@
-'use client'
+"use client"
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
@@ -8,6 +8,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { AddToCartButton } from "@/components/add-to-cart-button"
 
 export default function ProductPage({ params }: { params: { id: string } }) {
   const [product, setProduct] = useState<any>(null)
@@ -20,15 +21,15 @@ export default function ProductPage({ params }: { params: { id: string } }) {
     if (params.id) {
       setLoading(true)
       fetch(`/api/products/${params.id}`)
-        .then(res => {
+        .then((res) => {
           if (!res.ok) throw new Error("Failed to fetch product")
           return res.json()
         })
-        .then(data => {
-          if (!data.visible) router.push('/404')
+        .then((data) => {
+          if (!data.visible) router.push("/404")
           setProduct(data)
         })
-        .catch(err => setError(err.message))
+        .catch((err) => setError(err.message))
         .finally(() => setLoading(false))
     }
   }, [params.id, router])
@@ -61,8 +62,8 @@ export default function ProductPage({ params }: { params: { id: string } }) {
         <div className="text-center space-y-4">
           <h1 className="text-2xl font-bold text-red-600">Error</h1>
           <p className="text-muted-foreground">{error}</p>
-          <button 
-            onClick={() => window.location.reload()} 
+          <button
+            onClick={() => window.location.reload()}
             className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90"
           >
             Try Again
@@ -79,13 +80,12 @@ export default function ProductPage({ params }: { params: { id: string } }) {
   return (
     <div className="container mx-auto  px-4 py-8">
       <div className="grid  md:grid-cols-2 gap-8">
-        
         {/* Left Side - Main Image */}
-        <ProductImageGallery 
-          images={product.images} 
-          name={product.name} 
-          selectedImage={selectedImage} 
-          setSelectedImage={setSelectedImage} 
+        <ProductImageGallery
+          images={product.images}
+          name={product.name}
+          selectedImage={selectedImage}
+          setSelectedImage={setSelectedImage}
         />
 
         {/* Right Side - Info + Buy Now + Thumbnails */}
@@ -97,7 +97,8 @@ export default function ProductPage({ params }: { params: { id: string } }) {
             <p>{product.description}</p>
           </div>
 
-          <div className="mt-8">
+          <div className="mt-8 space-y-3">
+            <AddToCartButton product={product} variant="outline" size="lg" className="w-full" />
             <Button size="lg" className="w-full" asChild>
               <Link href={`/buy-now/${product.id}`}>Buy Now</Link>
             </Button>
@@ -110,16 +111,15 @@ export default function ProductPage({ params }: { params: { id: string } }) {
                 key={i}
                 onClick={() => setSelectedImage(i)}
                 className={cn(
-                  'relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-md border transition-transform',
-                  selectedImage === i ? 'ring-2 ring-primary scale-105' : 'hover:scale-105'
+                  "relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-md border transition-transform",
+                  selectedImage === i ? "ring-2 ring-primary scale-105" : "hover:scale-105",
                 )}
               >
-                <Image src={img} alt={`Thumbnail ${i + 1}`} fill className="object-cover" />
+                <Image src={img || "/placeholder.svg"} alt={`Thumbnail ${i + 1}`} fill className="object-cover" />
               </button>
             ))}
           </div>
         </div>
-
       </div>
     </div>
   )

@@ -9,11 +9,11 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { CartButton } from "@/components/cart-button"
 import {
   Menu,
   User,
@@ -27,20 +27,15 @@ import {
   Crown,
 } from "lucide-react"
 import { useState, useEffect } from "react"
-import {
-  Sheet,
-  SheetContent,
-  SheetTrigger,
-  SheetClose
-} from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet"
 import Image from "next/image"
 
 // Extend session user type to include isAdmin
 type ExtendedUser = {
-  name?: string | null;
-  email?: string | null;
-  image?: string | null;
-  isAdmin?: boolean;
+  name?: string | null
+  email?: string | null
+  image?: string | null
+  isAdmin?: boolean
 }
 
 interface HeaderProps {
@@ -51,11 +46,11 @@ interface HeaderProps {
 export default function Header({ session, isadmin }: HeaderProps) {
   const pathname = usePathname()
   const [isScrolled, setIsScrolled] = useState(false)
-  
+
   // Cast user to extended type and check admin status
   const user = session?.user as ExtendedUser | undefined
   const isUserAdmin = isadmin || user?.isAdmin
-  
+
   useEffect(() => {
     const handleScroll = () => {
       if (window.scrollY > 10) {
@@ -64,28 +59,24 @@ export default function Header({ session, isadmin }: HeaderProps) {
         setIsScrolled(false)
       }
     }
-    
+
     window.addEventListener("scroll", handleScroll)
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
 
   return (
-    <header className={`sticky top-0 z-50 w-full border-b transition-shadow duration-300 ${isScrolled ? 'bg-background/80 backdrop-blur-md shadow-sm' : 'bg-background'}`}>
+    <header
+      className={`sticky top-0 z-50 w-full border-b transition-shadow duration-300 ${isScrolled ? "bg-background/80 backdrop-blur-md shadow-sm" : "bg-background"}`}
+    >
       <div className="flex h-16 mx-auto items-center">
         <div className="flex items-center mx-4 justify-between w-full">
           {/* Left section */}
           <div className="flex items-center">
-            <div  className=" flex items-center  group">
-              <Link href="/"  className="  relative right-14  transition-transform group-hover:scale-105">
-                <Image 
-                  src="/logo.svg" 
-                  alt="Shop ELBHJA Logo" 
-                  width={160} 
-                  height={160}
-                
-                />
+            <div className=" flex items-center  group">
+              <Link href="/" className="  relative right-14  transition-transform group-hover:scale-105">
+                <Image src="/logo.svg" alt="Shop ELBHJA Logo" width={160} height={160} />
               </Link>
-              <Link  href="/" className="flex relative right-24 flex-col">
+              <Link href="/" className="flex relative right-24 flex-col">
                 <span className="text-xl md:text-3xl italic font-black tracking-tight bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent hover:from-primary/80 hover:to-primary transition-all duration-300">
                   Shop ELBHJA
                 </span>
@@ -95,12 +86,14 @@ export default function Header({ session, isadmin }: HeaderProps) {
 
           {/* Right section */}
           <div className="flex items-center gap-3">
+            <CartButton />
+
             {session ? (
               <div className="hidden md:block">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button 
-                      variant="ghost" 
+                    <Button
+                      variant="ghost"
                       className="relative h-10 px-3 py-2 rounded-xl hover:bg-muted/80 transition-all duration-200 group border border-transparent hover:border-border/50"
                     >
                       <div className="flex items-center gap-2">
@@ -112,7 +105,7 @@ export default function Header({ session, isadmin }: HeaderProps) {
                         </Avatar>
                         <div className="hidden lg:flex flex-col items-start min-w-0">
                           <span className="text-sm font-medium truncate max-w-24">
-                            {user?.name?.split(' ')[0] || 'User'}
+                            {user?.name?.split(" ")[0] || "User"}
                           </span>
                           {isUserAdmin && (
                             <div className="flex items-center gap-1">
@@ -125,12 +118,7 @@ export default function Header({ session, isadmin }: HeaderProps) {
                       </div>
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent 
-                    className="w-64 p-2" 
-                    align="end" 
-                    sideOffset={8}
-                    forceMount
-                  >
+                  <DropdownMenuContent className="w-64 p-2" align="end" sideOffset={8} forceMount>
                     {/* User Profile Header */}
                     <div className="p-3 rounded-lg bg-gradient-to-br from-muted/50 to-muted/20 mb-2">
                       <div className="flex items-center gap-3">
@@ -146,13 +134,15 @@ export default function Header({ session, isadmin }: HeaderProps) {
                           {isUserAdmin && (
                             <div className="flex items-center gap-1 mt-1">
                               <div className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse"></div>
-                              <span className="text-xs text-amber-600 dark:text-amber-500 font-medium">Administrator</span>
+                              <span className="text-xs text-amber-600 dark:text-amber-500 font-medium">
+                                Administrator
+                              </span>
                             </div>
                           )}
                         </div>
                       </div>
                     </div>
-                    
+
                     {/* Admin menu items */}
                     {isUserAdmin && (
                       <>
@@ -206,9 +196,9 @@ export default function Header({ session, isadmin }: HeaderProps) {
                         <DropdownMenuSeparator />
                       </>
                     )}
-                    
-                    <DropdownMenuItem 
-                      onClick={() => signOut()} 
+
+                    <DropdownMenuItem
+                      onClick={() => signOut()}
                       className="rounded-lg text-destructive focus:text-destructive focus:bg-destructive/10 py-2"
                     >
                       <div className="h-8 w-8 rounded-md bg-red-100 dark:bg-red-900/30 flex items-center justify-center mr-3">
@@ -220,9 +210,9 @@ export default function Header({ session, isadmin }: HeaderProps) {
                 </DropdownMenu>
               </div>
             ) : (
-              <Button 
-                variant="default" 
-                onClick={() => signIn("google")} 
+              <Button
+                variant="default"
+                onClick={() => signIn("google")}
                 className="hidden md:flex rounded-xl px-6 py-2 font-medium shadow-sm hover:shadow-md transition-all duration-200"
               >
                 Sign In
@@ -243,16 +233,18 @@ export default function Header({ session, isadmin }: HeaderProps) {
                   <div className="p-6 pb-4 border-b bg-gradient-to-r from-primary/5 to-primary/10">
                     <div className="flex items-center gap-3">
                       <div className="h-10 w-10 rounded-xl overflow-hidden">
-                        <Image 
-                          src="/logo.svg" 
-                          alt="Shop ELBHJA Logo" 
-                          width={40} 
+                        <Image
+                          src="/logo.svg"
+                          alt="Shop ELBHJA Logo"
+                          width={40}
                           height={40}
                           className="h-full w-full object-contain"
                         />
                       </div>
                       <div>
-                        <h2 className="font-black text-lg bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">Shop ELBHJA</h2>
+                        <h2 className="font-black text-lg bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+                          Shop ELBHJA
+                        </h2>
                         <p className="text-xs text-muted-foreground">Admin Portal</p>
                       </div>
                     </div>
@@ -292,10 +284,10 @@ export default function Header({ session, isadmin }: HeaderProps) {
                             </h3>
                             <nav className="space-y-1">
                               <SheetClose asChild>
-                                <Link 
+                                <Link
                                   href="/admin"
                                   className={`flex items-center text-sm font-medium rounded-xl py-3 px-3 transition-all duration-200 hover:bg-primary/10 hover:text-primary group ${
-                                    pathname === '/admin' ? 'bg-primary/10 text-primary' : 'text-foreground/70'
+                                    pathname === "/admin" ? "bg-primary/10 text-primary" : "text-foreground/70"
                                   }`}
                                 >
                                   <div className="h-8 w-8 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mr-3 group-hover:bg-blue-200 dark:group-hover:bg-blue-900/50 transition-colors">
@@ -305,10 +297,10 @@ export default function Header({ session, isadmin }: HeaderProps) {
                                 </Link>
                               </SheetClose>
                               <SheetClose asChild>
-                                <Link 
+                                <Link
                                   href="/admin/orders"
                                   className={`flex items-center text-sm font-medium rounded-xl py-3 px-3 transition-all duration-200 hover:bg-primary/10 hover:text-primary group ${
-                                    pathname === '/admin/orders' ? 'bg-primary/10 text-primary' : 'text-foreground/70'
+                                    pathname === "/admin/orders" ? "bg-primary/10 text-primary" : "text-foreground/70"
                                   }`}
                                 >
                                   <div className="h-8 w-8 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center mr-3 group-hover:bg-orange-200 dark:group-hover:bg-orange-900/50 transition-colors">
@@ -318,10 +310,10 @@ export default function Header({ session, isadmin }: HeaderProps) {
                                 </Link>
                               </SheetClose>
                               <SheetClose asChild>
-                                <Link 
+                                <Link
                                   href="/admin/products"
                                   className={`flex items-center text-sm font-medium rounded-xl py-3 px-3 transition-all duration-200 hover:bg-primary/10 hover:text-primary group ${
-                                    pathname === '/admin/products' ? 'bg-primary/10 text-primary' : 'text-foreground/70'
+                                    pathname === "/admin/products" ? "bg-primary/10 text-primary" : "text-foreground/70"
                                   }`}
                                 >
                                   <div className="h-8 w-8 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center mr-3 group-hover:bg-green-200 dark:group-hover:bg-green-900/50 transition-colors">
@@ -331,10 +323,12 @@ export default function Header({ session, isadmin }: HeaderProps) {
                                 </Link>
                               </SheetClose>
                               <SheetClose asChild>
-                                <Link 
+                                <Link
                                   href="/admin/customers"
                                   className={`flex items-center text-sm font-medium rounded-xl py-3 px-3 transition-all duration-200 hover:bg-primary/10 hover:text-primary group ${
-                                    pathname === '/admin/customers' ? 'bg-primary/10 text-primary' : 'text-foreground/70'
+                                    pathname === "/admin/customers"
+                                      ? "bg-primary/10 text-primary"
+                                      : "text-foreground/70"
                                   }`}
                                 >
                                   <div className="h-8 w-8 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center mr-3 group-hover:bg-purple-200 dark:group-hover:bg-purple-900/50 transition-colors">
@@ -344,10 +338,10 @@ export default function Header({ session, isadmin }: HeaderProps) {
                                 </Link>
                               </SheetClose>
                               <SheetClose asChild>
-                                <Link 
+                                <Link
                                   href="/admin/settings"
                                   className={`flex items-center text-sm font-medium rounded-xl py-3 px-3 transition-all duration-200 hover:bg-primary/10 hover:text-primary group ${
-                                    pathname === '/admin/settings' ? 'bg-primary/10 text-primary' : 'text-foreground/70'
+                                    pathname === "/admin/settings" ? "bg-primary/10 text-primary" : "text-foreground/70"
                                   }`}
                                 >
                                   <div className="h-8 w-8 rounded-lg bg-gray-100 dark:bg-gray-900/30 flex items-center justify-center mr-3 group-hover:bg-gray-200 dark:group-hover:bg-gray-900/50 transition-colors">
@@ -384,7 +378,7 @@ export default function Header({ session, isadmin }: HeaderProps) {
                   {session && (
                     <div className="border-t p-6 mt-auto">
                       <SheetClose asChild>
-                        <button 
+                        <button
                           onClick={() => signOut()}
                           className="flex items-center justify-center w-full text-sm font-medium rounded-xl py-3 px-4 transition-all duration-200 hover:bg-destructive/10 hover:text-destructive text-muted-foreground group"
                         >
